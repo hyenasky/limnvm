@@ -23,8 +23,9 @@ vm.cb.mousemoved = {}
 vm.cb.wheelmoved = {}
 
 function vm.registerCallback(t, cb)
-	if vm.cb[t] then
-		vm.cb[t] = cb
+	local t = vm.cb[t]
+	if t then
+		t[#t+1] = cb
 	end
 end
 
@@ -43,10 +44,10 @@ function love.update(dt)
 		cycles = 0
 	end
 
-	local vcut = vm.cb.update
-	local vcul = #vcut
-	for i = 1, vcul do
-		vcut[i](dt)
+	local vct = vm.cb.update
+	local vcl = #vct
+	for i = 1, vcl do
+		vct[i](dt)
 	end
 
 	local cycle = vm.computer.cpu.cycle
@@ -65,57 +66,57 @@ function love.update(dt)
 end
 
 function love.draw()
-	local vcdt = vm.cb.draw
-	local vcdl = #vcdt
-	for i = 1, vcdl do
-		vcdt[i]()
+	local vct = vm.cb.draw
+	local vcl = #vct
+	for i = 1, vcl do
+		vct[i]()
 	end
 end
 
 function love.keypressed(key, t, isrepeat)
-	local vcdt = vm.cb.keypressed
-	local vcdl = #vcdt
-	for i = 1, vcdl do
-		vcdt[i](key, t, isrepeat)
+	local vct = vm.cb.keypressed
+	local vcl = #vct
+	for i = 1, vcl do
+		vckpt[i](key, t, isrepeat)
 	end
 end
 
 function love.keyreleased(key, t)
-	local vcdt = vm.cb.keyreleased
-	local vcdl = #vcdt
-	for i = 1, vcdl do
-		vcdt[i](key, t)
+	local vct = vm.cb.keyreleased
+	local vcl = #vct
+	for i = 1, vcl do
+		vct[i](key, t)
 	end
 end
 
 function love.mousepressed(x, y, button)
-	local vcdt = vm.cb.mousepressed
-	local vcdl = #vcdt
-	for i = 1, vcdl do
-		vcdt[i](x, y, button)
+	local vct = vm.cb.mousepressed
+	local vcl = #vct
+	for i = 1, vcl do
+		vct[i](x, y, button)
 	end
 end
 
 function love.mousereleased(x, y, button)
-	local vcdt = vm.cb.mousereleased
-	local vcdl = #vcdt
-	for i = 1, vcdl do
-		vcdt[i](x, y, button)
+	local vct = vm.cb.mousereleased
+	local vcl = #vct
+	for i = 1, vcl do
+		vct[i](x, y, button)
 	end
 end
 
 function love.mousemoved(x, y, dx, dy, istouch)
-	local vcdt = vm.cb.mousemoved
-	local vcdl = #vcdt
-	for i = 1, vcdl do
-		vcdt[i](x, y, dx, dy, istouch)
+	local vct = vm.cb.mousemoved
+	local vcl = #vct
+	for i = 1, vcl do
+		vct[i](x, y, dx, dy, istouch)
 	end
 end
 
 function love.wheelmoved(x, y)
-	local vcdt = vm.cb.wheelmoved
-	local vcdl = #vcdt
-	for i = 1, vcdl do
-		vcdt[i](x, y)
+	local vct = vm.cb.wheelmoved
+	local vcl = #vct
+	for i = 1, vcl do
+		vct[i](x, y)
 	end
 end
