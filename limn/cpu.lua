@@ -1,5 +1,10 @@
 local cpu = {}
 
+local lshift, rshift, tohex, arshift, band, bxor, bor, bnot, bror, brol =
+	lshift, rshift, tohex, arshift, band, bxor, bor, bnot, bror, brol
+
+local floor = math.floor
+
 function cpu.new(vm, c)
 	local p = {}
 
@@ -87,7 +92,7 @@ function cpu.new(vm, c)
 	local pgReg = p.pgReg
 
 	function p.reset()
-		local resetVector = fetchLong(0)
+		local resetVector = fetchLong(0xFFFE0000)
 
 		reg[32] = resetVector
 	end
@@ -117,7 +122,7 @@ function cpu.new(vm, c)
 		[0x1] = function (pc) -- [li]
 			psReg(fetchByte(pc + 1), fetchLong(pc + 2))
 
-			return pc + 5
+			return pc + 6
 		end,
 		[0x2] = function (pc) -- [mov]
 			psReg(fetchByte(pc + 1), pgReg(fetchByte(pc + 2)))
@@ -256,111 +261,63 @@ function cpu.new(vm, c)
 		[0x1B] = function (pc) -- [b]
 			return fetchLong(pc + 1)
 		end,
-		[0x1C] = function (pc) -- [bi]
-			return pc + fetchLong(pc + 1)
-		end,
-		[0x1D] = function (pc) -- [br]
+		[0x1C] = function (pc) -- [br]
 			return pgReg(fetchByte(pc + 1))
 		end,
-		[0x1E] = function (pc) -- [bri]
-			return pc + lsign(pgReg(fetchByte(pc+1)))
-		end,
-		[0x1F] = function (pc) -- [be]
+		[0x1D] = function (pc) -- [be]
 			if getFlag(0) == 1 then
 				return fetchLong(pc + 1)
 			end
+
 			return pc + 5
 		end,
-		[0x20] = function (pc) -- [bei]
-			if getFlag(0) == 1 then
-				return pc + lsign(fetchLong(pc + 1))
-			end
-			return pc + 5
-		end,
-		[0x21] = function (pc) -- [bne]
+		[0x1E] = function (pc) -- [bne]
 			if getFlag(0) == 0 then
 				return fetchLong(pc + 1)
 			end
+
 			return pc + 5
 		end,
-		[0x22] = function (pc) -- [bnei]
-			if getFlag(0) == 0 then
-				return pc + lsign(fetchLong(pc + 1))
-			end
-			return pc + 5
-		end,
-		[0x23] = function (pc) -- [bg]
+		[0x1F] = function (pc) -- [bg]
 			if getFlag(1) == 1 then
 				return fetchLong(pc + 1)
 			end
+
 			return pc + 5
 		end,
-		[0x24] = function (pc) -- [bgi]
-			if getFlag(1) == 1 then
-				return pc + lsign(fetchLong(pc + 1))
-			end
-			return pc + 5
-		end,
-		[0x25] = function (pc) -- [bl]
+		[0x20] = function (pc) -- [bl]
 			if getFlag(1) == 0 then
 				return fetchLong(pc + 1)
 			end
+
 			return pc + 5
 		end,
-		[0x26] = function (pc) -- [bli]
-			if getFlag(1) == 0 then
-				return pc + lsign(fetchLong(pc + 1))
-			end
-			return pc + 5
-		end,
-		[0x27] = function (pc) -- [bge]
+		[0x21] = function (pc) -- [bge]
 			if (getFlag(0) == 1) or (getFlag(1) == 1) then
 				return fetchLong(pc + 1)
 			end
+
 			return pc + 5
 		end,
-		[0x28] = function (pc) -- [bgei]
-			if (getFlag(0) == 1) or (getFlag(1) == 1) then
-				return pc + lsign(fetchLong(pc + 1))
-			end
-			return pc + 5
-		end,
-		[0x29] = function (pc) -- [ble]
+		[0x22] = function (pc) -- [ble]
 			if (getFlag(0) == 1) or (getFlag(1) == 0) then
 				return fetchLong(pc + 1)
 			end
+
 			return pc + 5
 		end,
-		[0x2A] = function (pc) -- [blei]
-			if (getFlag(0) == 1) or (getFlag(1) == 0) then
-				return pc + lsign(fetchLong(pc + 1))
-			end
-			return pc + 5
-		end,
-		[0x2B] = function (pc) -- [bc]
-			if getFlag(2) == 1 then
-				return fetchLong(pc + 1)
-			end
-			return pc + 5
-		end,
-		[0x2C] = function (pc) -- [bci]
-			if getFlag(2) == 1 then
-				return pc + lsign(fetchLong(pc + 1))
-			end
-			return pc + 5
-		end,
-		[0x2D] = function (pc) -- [call]
+		[0x23] = function (pc) -- [call]
 			push(pc + 5)
 
 			return fetchLong(pc + 1)
 		end,
-		[0x2E] = function (pc) -- [ret]
+		[0x24] = function (pc) -- [ret]
 			return pop()
 		end,
 
 		-- comparison primitives
 
-		[0x2F] = function (pc) -- [cmp]
+		[0x25] = function (pc) -- [cmp]
 			local o1, o2 = pgReg(fetchByte(pc + 1)), pgReg(fetchByte(pc + 2))
 
 			if o1 > o2 then
@@ -377,7 +334,7 @@ function cpu.new(vm, c)
 
 			return pc + 3
 		end,
-		[0x30] = function (pc) -- [cmpi]
+		[0x26] = function (pc) -- [cmpi]
 			local o1, o2 = pgReg(fetchByte(pc + 1)), fetchLong(pc + 2)
 
 			if o1 > o2 then
@@ -397,129 +354,158 @@ function cpu.new(vm, c)
 
 		-- arithmetic primitives
 
-		[0x31] = function (pc) -- [add]
-			psReg(fetchByte(pc + 1), pgReg(pc + 2) + pgReg(pc + 3))
+		[0x27] = function (pc) -- [add]
+			psReg(fetchByte(pc + 1), pgReg(fetchByte(pc + 2)) + pgReg(fetchByte(pc + 3)))
+
 			return pc + 4
 		end,
-		[0x32] = function (pc) -- [addi]
-			psReg(fetchByte(pc + 1), pgReg(pc + 2) + fetchLong(pc + 3))
+		[0x28] = function (pc) -- [addi]
+			psReg(fetchByte(pc + 1), pgReg(fetchByte(pc + 2)) + fetchLong(pc + 3))
+
 			return pc + 7
 		end,
-		[0x33] = function (pc) -- [sub]
-			psReg(fetchByte(pc + 1), math.abs(pgReg(pc + 2) - pgReg(pc + 3)))
+		[0x29] = function (pc) -- [sub]
+			psReg(fetchByte(pc + 1), math.abs(pgReg(fetchByte(pc + 2)) - pgReg(fetchByte(pc + 3))))
+
 			return pc + 4
 		end,
-		[0x34] = function (pc) -- [subi]
-			psReg(fetchByte(pc + 1), math.abs(pgReg(pc + 2) - fetchLong(pc + 3)))
+		[0x2A] = function (pc) -- [subi]
+			psReg(fetchByte(pc + 1), math.abs(pgReg(fetchByte(pc + 2)) - fetchLong(pc + 3)))
+
 			return pc + 7
 		end,
-		[0x35] = function (pc) -- [mul]
-			psReg(fetchByte(pc + 1), pgReg(pc + 2) * pgReg(pc + 3))
+		[0x2B] = function (pc) -- [mul]
+			psReg(fetchByte(pc + 1), pgReg(fetchByte(pc + 2)) * pgReg(fetchByte(pc + 3)))
+
 			return pc + 4
 		end,
-		[0x36] = function (pc) -- [muli]
-			psReg(fetchByte(pc + 1), pgReg(pc + 2) * fetchLong(pc + 3))
+		[0x2C] = function (pc) -- [muli]
+			psReg(fetchByte(pc + 1), pgReg(fetchByte(pc + 2)) * fetchLong(pc + 3))
+
 			return pc + 7
 		end,
-		[0x37] = function (pc) -- [div]
-			psReg(fetchByte(pc + 1), math.floor(pgReg(pc + 2) / pgReg(pc + 3)))
+		[0x2D] = function (pc) -- [div]
+			psReg(fetchByte(pc + 1), math.floor(pgReg(fetchByte(pc + 2)) / pgReg(fetchByte(pc + 3))))
+
 			return pc + 4
 		end,
-		[0x38] = function (pc) -- [divi]
-			psReg(fetchByte(pc + 1), math.floor(pgReg(pc + 2) / fetchLong(pc + 3)))
+		[0x2E] = function (pc) -- [divi]
+			psReg(fetchByte(pc + 1), math.floor(pgReg(fetchByte(pc + 2)) / fetchLong(pc + 3)))
+
 			return pc + 7
 		end,
-		[0x39] = function (pc) -- [mod]
-			psReg(fetchByte(pc + 1), pgReg(pc + 2) % pgReg(pc + 3))
+		[0x2F] = function (pc) -- [mod]
+			psReg(fetchByte(pc + 1), pgReg(fetchByte(pc + 2)) % pgReg(fetchByte(pc + 3)))
+
 			return pc + 4
 		end,
-		[0x3A] = function (pc) -- [modi]
-			psReg(fetchByte(pc + 1), pgReg(pc + 2) % fetchLong(pc + 3))
+		[0x30] = function (pc) -- [modi]
+			psReg(fetchByte(pc + 1), pgReg(fetchByte(pc + 2)) % fetchLong(pc + 3))
+
 			return pc + 7
 		end,
 
 		-- logic primitives
 
-		[0x3B] = function (pc) -- [not]
+		[0x31] = function (pc) -- [not]
 			psReg(fetchByte(pc + 1), bnot(pgReg(fetchByte(pc + 2))))
+
 			return pc + 3
 		end,
-		[0x3C] = function (pc) -- [ior]
+		[0x32] = function (pc) -- [ior]
 			psReg(fetchByte(pc + 1), bor(pgReg(fetchByte(pc + 2)), pgReg(fetchByte(pc + 3))))
+
 			return pc + 4
 		end,
-		[0x3D] = function (pc) -- [iori]
+		[0x33] = function (pc) -- [iori]
 			psReg(fetchByte(pc + 1), bor(pgReg(fetchByte(pc + 2)), fetchLong(pc + 3)))
+
 			return pc + 7
 		end,
-		[0x3E] = function (pc) -- [nor]
+		[0x34] = function (pc) -- [nor]
 			psReg(fetchByte(pc + 1), bnor(pgReg(fetchByte(pc + 2)), pgReg(fetchByte(pc + 3))))
+
 			return pc + 4
 		end,
-		[0x3F] = function (pc) -- [nori]
+		[0x35] = function (pc) -- [nori]
 			psReg(fetchByte(pc + 1), bnor(pgReg(fetchByte(pc + 2)), fetchLong(pc + 3)))
+
 			return pc + 7
 		end,
-		[0x40] = function (pc) -- [eor]
+		[0x36] = function (pc) -- [eor]
 			psReg(fetchByte(pc + 1), bxor(pgReg(fetchByte(pc + 2)), pgReg(fetchByte(pc + 3))))
+
 			return pc + 4
 		end,
-		[0x41] = function (pc) -- [eori]
+		[0x37] = function (pc) -- [eori]
 			psReg(fetchByte(pc + 1), bxor(pgReg(fetchByte(pc + 2)), fetchLong(pc + 3)))
+
 			return pc + 7
 		end,
-		[0x42] = function (pc) -- [and]
+		[0x38] = function (pc) -- [and]
 			psReg(fetchByte(pc + 1), band(pgReg(fetchByte(pc + 2)), pgReg(fetchByte(pc + 3))))
+
 			return pc + 4
 		end,
-		[0x43] = function (pc) -- [andi]
+		[0x39] = function (pc) -- [andi]
 			psReg(fetchByte(pc + 1), band(pgReg(fetchByte(pc + 2)), fetchLong(pc + 3)))
+
 			return pc + 7
 		end,
-		[0x44] = function (pc) -- [nand]
+		[0x3A] = function (pc) -- [nand]
 			psReg(fetchByte(pc + 1), bnand(pgReg(fetchByte(pc + 2)), pgReg(fetchByte(pc + 3))))
+
 			return pc + 4
 		end,
-		[0x45] = function (pc) -- [nandi]
+		[0x3B] = function (pc) -- [nandi]
 			psReg(fetchByte(pc + 1), bnand(pgReg(fetchByte(pc + 2)), fetchLong(pc + 3)))
+
 			return pc + 7
 		end,
-		[0x46] = function (pc) -- [lsh]
+		[0x3C] = function (pc) -- [lsh]
 			psReg(fetchByte(pc + 1), lshift(pgReg(fetchByte(pc + 2)), pgReg(fetchByte(pc + 3))))
+
 			return pc + 4
 		end,
-		[0x47] = function (pc) -- [lshi]
+		[0x3D] = function (pc) -- [lshi]
 			psReg(fetchByte(pc + 1), lshift(pgReg(fetchByte(pc + 2)), fetchByte(pc + 3)))
+
 			return pc + 4
 		end,
-		[0x48] = function (pc) -- [rsh]
+		[0x3E] = function (pc) -- [rsh]
 			psReg(fetchByte(pc + 1), rshift(pgReg(fetchByte(pc + 2)), pgReg(fetchByte(pc + 3))))
+
 			return pc + 4
 		end,
-		[0x49] = function (pc) -- [rshi]
+		[0x3F] = function (pc) -- [rshi]
 			psReg(fetchByte(pc + 1), rshift(pgReg(fetchByte(pc + 2)), fetchByte(pc + 3)))
+
 			return pc + 4
 		end,
-		[0x4A] = function (pc) -- [bset]
+		[0x40] = function (pc) -- [bset]
 			psReg(fetchByte(pc + 1), setBit(pgReg(fetchByte(pc + 2)), pgReg(fetchByte(pc + 3)), 1))
+
 			return pc + 4
 		end,
-		[0x4B] = function (pc) -- [bseti]
+		[0x41] = function (pc) -- [bseti]
 			psReg(fetchByte(pc + 1), setBit(pgReg(fetchByte(pc + 2)), fetchByte(pc + 3), 1))
+
 			return pc + 4
 		end,
-		[0x4C] = function (pc) -- [bclr]
+		[0x42] = function (pc) -- [bclr]
 			psReg(fetchByte(pc + 1), setBit(pgReg(fetchByte(pc + 2)), pgReg(fetchByte(pc + 3)), 0))
+
 			return pc + 4
 		end,
-		[0x4D] = function (pc) -- [bclri]
+		[0x43] = function (pc) -- [bclri]
 			psReg(fetchByte(pc + 1), setBit(pgReg(fetchByte(pc + 2)), fetchByte(pc + 3), 0))
+
 			return pc + 4
 		end,
 
 		-- special instructions
 
-		[0x4E] = function (pc) -- [sys]
+		[0x44] = function (pc) -- [sys]
 			local i = fetchByte(pc + 1)
 
 			if i > 5 then i = 0 end
@@ -528,24 +514,27 @@ function cpu.new(vm, c)
 
 			return pc + 2
 		end,
-		[0x4F] = function (pc) -- [cli]
+		[0x45] = function (pc) -- [cli]
 			if kernelMode() then
 				intq = {}
 			else
 				int(3) -- privilege violation
 			end
+
 			return pc + 1
 		end,
-		[0x50] = function (pc) -- [brk]
+		[0x46] = function (pc) -- [brk]
 			int(0x10)
+
 			return pc + 1
 		end,
-		[0x51] = function (pc) -- [hlt]
+		[0x47] = function (pc) -- [hlt]
 			if kernelMode() then
 				running = false
 			else
 				int(3) -- privilege violation
 			end
+			
 			return pc + 1
 		end,
 

@@ -53,7 +53,7 @@ function love.update(dt)
 	local cycle = vm.computer.cpu.cycle
 
 	local t = love.timer.getTime
-	local timeslice = 1/30 --should be equivalent to 1/targetfps
+	local timeslice = 1/60 --should be equivalent to 1/targetfps
 
 	if cycle then
 		local s = t()
@@ -63,6 +63,7 @@ function love.update(dt)
 			cycles = cycles + 1
 		end
 	end
+
 end
 
 function love.draw()

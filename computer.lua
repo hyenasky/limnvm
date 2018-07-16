@@ -8,6 +8,7 @@ function computer.new(vm, memsize)
 	c.bus = require("limn/bus").new(vm, c)
 
 	c.rom = require("limn/rom").new(vm, c)
+	c.gpu = require("limn/gpu").new(vm, c)
 
 	c.cpu.reset()
 
