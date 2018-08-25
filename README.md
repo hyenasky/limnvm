@@ -10,6 +10,8 @@ The CPU is based around the second iteration of my toy architecture.
 
 Ships with a pre-built boot ROM binary.
 
+![Running the Antecedent boot firmware](https://i.imgur.com/JHrhHT0.png)
+
 ## Running
 
 Modify the EMU variable in the makefile to whatever your Love2D 11.0 executable is.
