@@ -13,12 +13,12 @@ CLIENTBIN=./bin/client.bin
 all:
 	make rom run
 
-rom: $(ASM) $(ROM)
+rom:
 	printf '%s' `expr \`cat $(ROMBUILD)\` + 1` > $(ROMBUILD)
 	$(ASM) $(ROM) $(ROMBIN)
 
-run: $(EMU)
+run:
 	$(EMU) -rom $(ROMBIN) -sdisk -sdblock 1 $(CLIENTBIN)
 
-client: $(ASM) $(CLIENT)
+client:
 	$(ASM) $(CLIENT) $(CLIENTBIN)
