@@ -31,8 +31,33 @@ function gpu.new(vm, c)
 	g.framebuffer = ffi.new("uint8_t[?]", fbs) -- least significant bit is left-most pixel
 	local framebuffer = g.framebuffer
 
-	g.canvas = love.graphics.newCanvas(640,480)
+	g.canvas = love.graphics.newCanvas(width,height)
 	local canvas = g.canvas
+
+	vm.registerOpt("-display", function (arg, i)
+		local w,h = tonumber(arg[i+1]), tonumber(arg[i+2])
+
+		g.height = h
+		g.width = w
+		height = h
+		width = w
+
+		fbs = ((width*height)/4)
+		bytesPerRow = width/4		
+
+		g.canvas:release()
+
+		g.canvas = love.graphics.newCanvas(w,h)
+		canvas = g.canvas
+
+		g.framebuffer = nil
+		g.framebuffer = ffi.new("uint8_t[?]", fbs)
+		framebuffer = g.framebuffer
+
+		love.window.setMode(width, height)
+
+		return 3
+	end)
 
 	g.queue = ffi.new([[
 		struct {
@@ -127,11 +152,61 @@ function gpu.new(vm, c)
 		end
 	end
 
+	local function gpuh2(s, t, offset, v)
+		return gpuh(s, t, offset + 0x20000, v)
+	end
+
+	local function gpuh3(s, t, offset, v)
+		return gpuh(s, t, offset + 0x40000, v)
+	end
+
+	local function gpuh4(s, t, offset, v)
+		return gpuh(s, t, offset + 0x60000, v)
+	end
+
 	mmu.mapArea(0x7A00, gpuh)
+	mmu.mapArea(0x7A01, gpuh2)
+	mmu.mapArea(0x7A02, gpuh3)
+	mmu.mapArea(0x7A03, gpuh4)
+
+	local port13 = 0
+	local port14 = 0
+
+	local bus = c.bus
+
+	bus.addPort(0x12, function(s, t, v)
+		if s ~= 0 then
+			return 0
+		end
+
+		if t == 1 then
+			if v == 1 then -- gpuinfo
+				port13 = width
+				port14 = height
+			end
+		else
+			return 0
+		end
+	end)
+
+	bus.addPort(0x13, function (s, t, v)
+		if t == 0 then
+			return port13
+		else
+			port13 = v
+		end
+	end)
+
+	bus.addPort(0x14, function (s, t, v)
+		if t == 0 then
+			return port14
+		else
+			port14 = v
+		end
+	end)
 
 	vm.registerCallback("update", function (dt)
 		if queued > 0 then
-
 			love.graphics.setCanvas(canvas)
 
 			local nq = queued - 1
@@ -171,9 +246,9 @@ function gpu.new(vm, c)
 		end
 	end)
 
-	vm.registerCallback("draw", function ()
+	vm.registerCallback("draw", function (x,y,s)
 		love.graphics.setColor(1,1,1,1)
-		love.graphics.draw(canvas)
+		love.graphics.draw(canvas, x, y, 0, s, s)
 	end)
 
 	return g

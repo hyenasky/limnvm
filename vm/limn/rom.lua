@@ -30,10 +30,23 @@ function rom.new(vm, c)
 
 	mmu.mapArea(0x7FFF, romh)
 
-	local e = love.filesystem.read("test.rom")
-	for i = 1, #e do
-		rom[i-1] = string.byte(e:sub(i,i))
-	end
+	vm.registerOpt("-rom", function (arg, i)
+		local rf = io.open(arg[i+1], "rb")
+
+		if not rf then
+			error("Couldn't load ROM file "..arg[i+1])
+		end
+
+		local e = rf:read("*all")
+		for j = 1, #e do
+			rom[j-1] = string.byte(e:sub(j,j))
+		end
+		rf:close()
+
+		c.cpu.reset()
+
+		return 2
+	end)
 
 	return r
 end

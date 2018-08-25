@@ -34,6 +34,19 @@ function cpu.new(vm, c)
 	end
 	local int = p.int
 
+	-- we only want 1 fault per cycle at most
+	local faultOccurred = false
+
+	function p.fault(num) -- raise fault
+		if not faultOccurred then
+			int(num)
+			faultOccurred = true
+		end
+	end
+	local fault = p.fault
+
+	mmu.fault = fault -- let the mmu raise faults
+
 	function p.getFlag(n)
 		return getBit(reg[31], n)
 	end
@@ -45,12 +58,12 @@ function cpu.new(vm, c)
 	local setFlag = p.setFlag
 
 	function p.getState(n)
-		return getBit(reg[34], n)
+		return getBit(reg[34], n) or 0
 	end
 	local getState = p.getState
 
 	function p.setState(n, v)
-		reg[34] = setBit(reg[34], n, v)
+		reg[34] = setBit(reg[34], n, v) or 0
 	end
 	local setState = p.setState
 
@@ -71,7 +84,7 @@ function cpu.new(vm, c)
 			if kernelMode() then -- in kernel mode
 				reg[n] = v
 			else -- privileges too low
-				int(3) -- raise privilege violation fault
+				fault(3) -- raise privilege violation fault
 			end
 		end
 	end
@@ -84,7 +97,7 @@ function cpu.new(vm, c)
 			if kernelMode() then -- in kernel mode
 				return reg[n] or 0
 			else -- privileges too low
-				int(3) -- raise privilege violation fault
+				fault(3) -- raise privilege violation fault
 				return 0
 			end
 		end
@@ -92,6 +105,8 @@ function cpu.new(vm, c)
 	local pgReg = p.pgReg
 
 	function p.reset()
+		setState(0, 0) -- make sure we're in kernel mode
+
 		local resetVector = fetchLong(0xFFFE0000)
 
 		reg[32] = resetVector
@@ -385,22 +400,50 @@ function cpu.new(vm, c)
 			return pc + 7
 		end,
 		[0x2D] = function (pc) -- [div]
-			psReg(fetchByte(pc + 1), math.floor(pgReg(fetchByte(pc + 2)) / pgReg(fetchByte(pc + 3))))
+			local de = pgReg(fetchByte(pc + 3))
+
+			if de == 0 then
+				fault(0x0) -- divide by zero fault
+				return pc + 4
+			end
+
+			psReg(fetchByte(pc + 1), math.floor(pgReg(fetchByte(pc + 2)) / de))
 
 			return pc + 4
 		end,
 		[0x2E] = function (pc) -- [divi]
-			psReg(fetchByte(pc + 1), math.floor(pgReg(fetchByte(pc + 2)) / fetchLong(pc + 3)))
+			local de = fetchLong(pc + 3)
+
+			if de == 0 then
+				fault(0x0) -- divide by zero fault
+				return pc + 7
+			end
+
+			psReg(fetchByte(pc + 1), math.floor(pgReg(fetchByte(pc + 2)) / de))
 
 			return pc + 7
 		end,
 		[0x2F] = function (pc) -- [mod]
-			psReg(fetchByte(pc + 1), pgReg(fetchByte(pc + 2)) % pgReg(fetchByte(pc + 3)))
+			local de = pgReg(fetchByte(pc + 3))
+
+			if de == 0 then
+				fault(0x0) -- divide by zero fault
+				return pc + 4
+			end
+
+			psReg(fetchByte(pc + 1), pgReg(fetchByte(pc + 2)) % de)
 
 			return pc + 4
 		end,
 		[0x30] = function (pc) -- [modi]
-			psReg(fetchByte(pc + 1), pgReg(fetchByte(pc + 2)) % fetchLong(pc + 3))
+			local de = fetchLong(pc + 3)
+
+			if de == 0 then
+				fault(0x0) -- divide by zero fault
+				return pc + 7
+			end
+
+			psReg(fetchByte(pc + 1), pgReg(fetchByte(pc + 2)) % de)
 
 			return pc + 7
 		end,
@@ -518,7 +561,7 @@ function cpu.new(vm, c)
 			if kernelMode() then
 				intq = {}
 			else
-				int(3) -- privilege violation
+				fault(3) -- privilege violation
 			end
 
 			return pc + 1
@@ -532,9 +575,20 @@ function cpu.new(vm, c)
 			if kernelMode() then
 				running = false
 			else
-				int(3) -- privilege violation
+				fault(3) -- privilege violation
 			end
 			
+			return pc + 1
+		end,
+		[0x48] = function (pc) -- [iret]
+			if kernelMode() then
+				setState(0, pop())
+				reg[0] = pop()
+				return pop()
+			else
+				fault(3) -- privilege violation
+			end
+
 			return pc + 1
 		end,
 
@@ -558,6 +612,30 @@ function cpu.new(vm, c)
 
 	function p.cycle()
 		if running then
+			faultOccurred = false
+
+			local siq = #intq
+			-- if interrupts in queue, vector table initialized, and interrupts enabled
+			if (siq > 0) and (reg[35] ~= 0) and (getState(1) == 1) then
+				-- do interrupt
+
+				local n = intq[1] -- get num
+
+				local v = fetchLong(reg[35] + n*4) -- get vector
+
+				if v ~= 0 then
+					push(reg[32])
+					push(reg[0])
+					push(getState(0))
+
+					reg[32] = v
+					reg[0] = n
+					setState(0, 0)
+
+					table.remove(intq, 1)
+				end
+			end
+
 			local pc = reg[32]
 
 			local e = optable[fetchByte(pc)]
@@ -565,10 +643,163 @@ function cpu.new(vm, c)
 				reg[32] = e(pc)
 			else
 				reg[32] = pc + 1
-				int(1) -- invalid opcode
+				fault(1) -- invalid opcode
 			end
 		end
 	end
+
+
+
+
+
+
+
+
+
+
+
+	-- ui, wild west territory here on
+	p.panel = panel.new(0,0,150,250)
+	p.panel:setTitle("CPU")
+
+	p.panel:addHook("Exit", function ()
+		panel.cpanel.enabled = false
+	end)
+
+	local speedbox = panel.new(0,0,210,100)
+	speedbox:setTitle("Speed")
+
+	speedbox:addText("Input a speed in hertz.", 0, 10)
+
+	speedbox.si = speedbox:addTextInput(0, 45, 80, 10)
+
+	speedbox:setActiveTI(speedbox.si)
+
+	speedbox.ti[speedbox.si][5] = tostring(vm.hz)
+
+	p.panel:addHook("Speed", function ()
+		speedbox:draw()
+	end)
+
+	function speedbox:keypressed(key, t, isrepeat)
+		if key == "return" then
+			local sc = tonumber(speedbox.ti[speedbox.si][5])
+			if sc then
+				vm.hz = sc
+				vm.instructionsPerTick = vm.hz / vm.targetfps
+			end
+			speedbox.ti[speedbox.si][5] = tostring(vm.hz)
+		end
+	end
+
+	p.panel:addHook("Soft Reset", function ()
+		p.reset()
+	end)
+
+	p.panel:addHook("Hard Reset", function ()
+		reg[0] = 0
+		running = true
+		intq = {}
+		p.reset()
+	end)
+
+	p.panel.phook = p.panel:addHook("Pause", function ()
+		if running then
+			running = false
+			p.panel:setHook(p.panel.phook, "Unpause")
+		else
+			running = true
+			p.panel:setHook(p.panel.phook, "Pause")
+		end
+	end)
+
+	local interruptbox = panel.new(0,0,300,150)
+
+	interruptbox:setTitle("Interrupt")
+
+	interruptbox:addText(
+	[[Type a number and press enter to
+raise an interrupt.]], 0, 10)
+
+	interruptbox.i = interruptbox:addTextInput(0, 40, 100, 10)
+
+	interruptbox:setActiveTI(interruptbox.i)
+
+	interruptbox:addHook("Do it", function ()
+		local si = interruptbox.ti[interruptbox.i][5]
+		local e = tonumber(si)
+		if e then
+			int(e)
+			interruptbox.ti[interruptbox.i][5] = ""
+		end
+	end)
+
+	p.panel:addHook("Interrupt", function ()
+		interruptbox:draw()
+	end)
+
+	local statebox = panel.new(0,0,250,260)
+
+	statebox:setTitle("State")
+
+	statebox.rx = {}
+	statebox.ly = 20
+	statebox.areg = 0
+
+	for i = 0, 19 do
+		statebox.rx[i] = statebox:addTextInput(0, statebox.ly, 100, 10)
+		statebox.ly = statebox.ly + 10
+	end
+
+	statebox.ly = 20
+
+	for i = 20, 35 do
+		statebox.rx[i] = statebox:addTextInput(110, statebox.ly, 100, 10)
+		statebox.ly = statebox.ly + 10
+	end
+
+	statebox:setUpdate(function (dt)
+		for i = 0, 35 do
+			if i ~= statebox.areg then
+				statebox.ti[statebox.rx[i]][5] = string.format("0x%X", reg[i])
+			end
+		end
+	end)
+
+	function statebox:keypressed(key, t, isrepeat)
+		if key == "up" then
+			if statebox.areg < 1 then
+				statebox.areg = 35
+			else
+				statebox.areg = statebox.areg - 1
+			end
+		elseif key == "down" then
+			if statebox.areg == 35 then
+				statebox.areg = 0
+			else
+				statebox.areg = statebox.areg + 1
+			end
+		end
+
+		if key == "return" then
+			if statebox.areg ~= -1 then
+				local nr = tonumber(statebox.ti[statebox.rx[statebox.areg]][5])
+				if nr then
+					reg[statebox.areg] = nr
+				end
+			end
+		else
+			statebox:setActiveTI(statebox.rx[statebox.areg])
+		end
+	end
+
+	p.panel:addHook("State", function ()
+		statebox:draw()
+	end)
+
+	c.panel:addHook("CPU", function ()
+		p.panel:draw()
+	end)
 
 	return p
 end

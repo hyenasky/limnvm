@@ -6,6 +6,8 @@ local lshift, rshift, tohex, arshift, band, bxor, bor, bnot, bror, brol =
 function mmu.new(vm, c, memsize)
 	local m = {}
 
+	local mmu = m
+
 	m.memsize = memsize
 	local memsize = m.memsize
 
@@ -51,7 +53,7 @@ function mmu.new(vm, c, memsize)
 
 		areas[page] = n
 	end
-	local newArea = m.mapArea
+	local mapArea = m.mapArea
 
 	function m.unmapArea(page)
 		local e = areas[page]
@@ -86,6 +88,8 @@ function mmu.new(vm, c, memsize)
 			local e = physmem[ptr - physstart]
 
 			return physmem[ptr - physstart]
+		else
+			mmu.fault(7) -- this is cpu dependent
 		end
 
 		return 0
@@ -108,6 +112,8 @@ function mmu.new(vm, c, memsize)
 			local u2 = physmem[b+1]
 
 			return (u2 * 0x100) + u1 -- little endian
+		else
+			mmu.fault(7) -- this is cpu dependent
 		end
 
 		return 0
@@ -132,6 +138,8 @@ function mmu.new(vm, c, memsize)
 			local u4 = physmem[b+3]
 
 			return (u4 * 0x1000000) + (u3 * 0x10000) + (u2 * 0x100) + u1 -- little endian
+		else
+			mmu.fault(7) -- this is cpu dependent
 		end
 
 		return 0
@@ -153,6 +161,8 @@ function mmu.new(vm, c, memsize)
 
 		if (physstart <= ptr) and (physend >= ptr) then
 			physmem[ptr - physstart] = v
+		else
+			mmu.fault(7) -- this is cpu dependent
 		end
 	end
 	local TstoreByte = m.TstoreByte
@@ -172,6 +182,8 @@ function mmu.new(vm, c, memsize)
 
 			physmem[b] = u2
 			physmem[b+1] = u1 -- little endian
+		else
+			mmu.fault(7) -- this is cpu dependent
 		end
 	end
 	local TstoreInt = m.TstoreInt
@@ -193,6 +205,8 @@ function mmu.new(vm, c, memsize)
 			physmem[b+1] = u3
 			physmem[b+2] = u2
 			physmem[b+3] = u1 -- little endian
+		else
+			mmu.fault(7) -- this is cpu dependent
 		end
 	end
 	local TstoreLong = m.TstoreLong
@@ -217,6 +231,33 @@ function mmu.new(vm, c, memsize)
 
 	m.storeLong = TstoreLong
 	local storeLong = m.storeLong
+
+	-- mmu registers
+
+	m.registers = ffi.new("uint32_t[32]")
+	local registers = m.registers
+
+	registers[0] = memsize
+
+	mapArea(0x7FF9, function (s, t, offset, v)
+		if offset > 128 then
+			return 0
+		end
+
+		if band(offset, 3) ~= 0 then -- must be aligned to 4 bytes
+			return 0
+		end
+
+		if s ~= 2 then
+			return 0
+		end
+
+		if t == 0 then
+			return registers[offset/4]
+		else
+			registers[offset/4] = v
+		end
+	end)
 
 	return m
 end
