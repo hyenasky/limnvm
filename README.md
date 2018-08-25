@@ -1,5 +1,13 @@
 # limnvm
 
+Fantasy computer, inspired by late 80s Unix workstations.
+
+Emulates at a low level a CPU, chipset, 8-bit framebuffer, and keyboard.
+
+The long-term goal is to create a really neat (but useless) emulated desktop computer.
+
+The CPU is based around the second iteration of my toy architecture.
+
 Ships with a pre-built boot ROM binary.
 
 ## Running
