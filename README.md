@@ -4,7 +4,7 @@ Ships with a pre-built boot ROM binary.
 
 ## Running
 
-Modify the LOVE variable in the makefile to whatever your Love2D 11.0 executable is.
+Modify the EMU variable in the makefile to whatever your Love2D 11.0 executable is.
 
 Then, type `make run` in the project directory.
 
