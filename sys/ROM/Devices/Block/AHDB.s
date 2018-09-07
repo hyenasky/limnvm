@@ -79,12 +79,12 @@ AHDBWarningString:
 AHDRegister:
 	push r1
 
-	lri.b r2, AHDBLastMin
+	lri.b r2, AHDLastMin
 	addi r1, r2, AHDBDevTab
 	srr.b r1, r0
 
 	addi r2, r2, 1
-	sir.b AHDBLastMin, r2
+	sir.b AHDLastMin, r2
 
 	pop r1
 	ret
