@@ -18,7 +18,7 @@ rom:
 	$(ASM) $(ROM) $(ROMBIN)
 
 run:
-	$(EMU) -rom $(ROMBIN) -sdisk -sdblock 1 $(CLIENTBIN)
+	$(EMU) -rom $(ROMBIN) -ahd $(CLIENTBIN)
 
 client:
 	$(ASM) $(CLIENT) $(CLIENTBIN)

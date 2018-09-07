@@ -42,9 +42,10 @@ EBootSignature === 1
 ;r0 - block device
 GoClient:
 	li r0, 0
-	li r1, 1
+	li r1, 0
 	li r2, ClientBottom
-	call SerialReadBlock
+	;call SerialReadBlock
+	call AHDReadBlock
 
 	lri.l r0, ClientBottom
 	cmpi r0, 0x45544E41

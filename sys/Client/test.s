@@ -50,3 +50,5 @@ PutString:
 .out:
 	pop r1
 	ret
+
+.fill 0x1000 0x0

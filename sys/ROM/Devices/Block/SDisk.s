@@ -1,3 +1,6 @@
+;DEPRECATED
+;here for posterity
+
 ;turn the serial port into a block device in order to boot from it
 ;will read 4096 bytes from serial port into a buffer and then return
 

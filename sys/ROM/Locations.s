@@ -21,6 +21,6 @@ MonitorWordBuffer === 0x40200
 
 KeyboardBuffer === 0x41000
 
-ForthStack === 0x50000
+AHDBDevTab === 0x50000 ;8 bytes
 
 ClientBottom === 0xA0000

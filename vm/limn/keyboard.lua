@@ -6,6 +6,8 @@ local keydev = {}
 --  1: pop scancode from queue
 -- port 0x17: data
 
+-- raises interrupt 0x30 when a key is pressed
+
 local layout = {}
 layout.l = {}
 layout.m = {}

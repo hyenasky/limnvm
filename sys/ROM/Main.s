@@ -15,6 +15,7 @@ Reset:
 	call CharDevInit
 	call GraphicsInit
 	call ConsoleInit
+	call AHDBInit
 
 	li r0, 0x11
 	call StdPutChar
@@ -63,7 +64,7 @@ himsg:
 	.db 0xA
 	.ds Boot firmware for AISAv2 Lemon
 	.db 0xA
-	.ds Written by Will
+	.ds Written by Will and Rainer
 	.db 0xA, 0xA, 0xA, 0xA, 0x0
 
 Halt:

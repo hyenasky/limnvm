@@ -1,3 +1,4 @@
+block = require("block")
 ffi = require("ffi")
 require("misc")
 

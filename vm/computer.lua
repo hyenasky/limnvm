@@ -24,8 +24,8 @@ function computer.new(vm, memsize)
 	c.rom = require("limn/rom").new(vm, c)
 	c.gpu = require("limn/8bitgpu").new(vm, c)
 	c.serial = require("limn/serial").new(vm, c)
-	c.sdisk = require("limn/sdisk").new(vm, c)
 	c.keyboard = require("limn/keyboard").new(vm, c)
+	c.ahdb = require("limn/ahdb").new(vm, c)
 
 	-- init
 	c.cpu.reset()
