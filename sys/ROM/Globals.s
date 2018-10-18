@@ -32,7 +32,8 @@ KeyboardReadPointer === 258 ;byte
 KeyboardWritePointer === 259 ;byte
 
 AHDSpinning === 260 ;byte
-AHDLastMin === 261 ;byte
+
+BlockLastMajor === 262 ;byte
 
 ;control variables
 ResetReason === 384 ;byte

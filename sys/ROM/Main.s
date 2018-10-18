@@ -15,7 +15,7 @@ Reset:
 	call CharDevInit
 	call GraphicsInit
 	call ConsoleInit
-	call AHDBInit
+	call BlockInit
 
 	li r0, 0x11
 	call StdPutChar
@@ -34,6 +34,8 @@ Reset:
 
 	li r0, himsg
 	call PutString
+
+	call AHDBInit
 
 	call Monitor
 
@@ -55,7 +57,7 @@ himsg:
 	.ds \_| |_\_| \_/ \_/ \____/ \____\____/|___/ \____/\_| \_/ \_/  
 	.db 0xA
 	.db 0xA
-	.ds Version 0.4 (build 
+	.ds Version 1.1 (build 
 	.ds$ BuildNum
 	.ds )
 	.db 0xA

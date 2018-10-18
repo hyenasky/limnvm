@@ -301,7 +301,7 @@ function cpu.new(vm, c)
 			return pc + 5
 		end,
 		[0x20] = function (pc) -- [bl]
-			if getFlag(1) == 0 then
+			if (getFlag(1) == 0) and (getFlag(0) == 0) then
 				return fetchLong(pc + 1)
 			end
 

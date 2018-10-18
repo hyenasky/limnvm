@@ -56,13 +56,10 @@ MonitorDoLine:
 
 	cmpi r1, "z"
 	be .cmdz
-
-	cmpi r1, "m"
-	be .cmdm
 	
 	b .notcmd
 
-.cmdm:
+.cmdb:
 	push r0
 	li r0, MonitorWordBuffer
 	call StringZero
@@ -96,47 +93,40 @@ MonitorDoLine:
 	li r0, MonitorWordBuffer
 	call StringToInteger
 
-	add r2, r1, r0
+	xch r0, r1
 
-	li r3, 1
+	push r0
+	li r0, MonitorBString
+	call PutString
 
-.mloop:
-	cmp r1, r2
-	bg .mlout
+	pop r0
+	push r0
+	call PutInteger
 
-	modi r0, r3, 21
-	cmpi r0, 0
-	be .mlnl
-
-	b .mlc
-
-.mlnl:
-	li r0, 0xA
+	li r0, ","
 	call StdPutChar
 
 	mov r0, r1
 	call PutInteger
 
-	li r0, "]"
-	call StdPutChar
-
-	li r0, 0x09
-	call StdPutChar
-
-.mlc:
-	lrr.b r0, r1
-	call PutInteger
-
-	li r0, 0x09
-	call StdPutChar
-
-	addi r1, r1, 1
-	addi r3, r3, 1
-	b .mloop
-
-.mlout:
 	li r0, 0xA
 	call StdPutChar
+
+	pop r0
+
+	lshi r0, r0, 8
+	ior r0, r0, r1
+
+	call GoClient
+
+	cmpi r0, EBootSignature
+	be .bfail
+
+	b .out
+
+.bfail:
+	li r0, MonitorNBString
+	call PutString
 
 	b .out
 
@@ -178,8 +168,7 @@ MonitorDoLine:
 	b .out
 
 .cmdd:
-	li r0, MonitorDString
-	call PutString
+	call BlockDriverList
 
 	b .out
 
@@ -211,47 +200,6 @@ MonitorDoLine:
 
 	li r0, 0xA
 	call StdPutChar
-
-	b .out
-
-.cmdb:
-	push r0
-	li r0, MonitorWordBuffer
-	call StringZero
-	pop r0
-
-	push r2
-	addi r0, r0, 1
-	li r1, MonitorWordBuffer
-	li r2, 0x20 ;space
-	call StringTokenize
-	pop r2
-
-	li r0, MonitorWordBuffer
-	call StringToInteger
-
-	mov r1, r0
-
-	li r0, MonitorBString
-	call PutString
-
-	mov r0, r1
-	call PutInteger
-
-	li r0, 0xA
-	call StdPutChar
-
-	mov r0, r1
-	call GoClient
-
-	cmpi r0, EBootSignature
-	be .bfail
-
-	b .out
-
-.bfail:
-	li r0, MonitorNBString
-	call PutString
 
 	b .out
 
@@ -358,7 +306,7 @@ MonitorHelpString:
 	.db 0xA
 	.ds 'i <char>' - set stdin to chardev
 	.db 0xA
-	.ds 'b <block>' - boot from blkdev
+	.ds 'b <major> <minor>' - boot from blkdev
 	.db 0xA
 	.ds 'c' - clear console
 	.db 0xA
@@ -369,24 +317,6 @@ MonitorHelpString:
 	.ds 'd' - print devices
 	.db 0xA
 	.ds 'z' - colors
-	.db 0xA
-	.ds 'm <start> <size>' - hex dump from address start to start+size
-	.db 0xA, 0x0
-
-MonitorDString:
-	.ds Devices:
-	.db 0xA
-	.ds 	Char:
-	.db 0xA
-	.ds 		0 - serial
-	.db 0xA
-	.ds 		1 - graphical console
-	.db 0xA
-	.ds 		2 - keyboard
-	.db 0xA
-	.ds 	Block:
-	.db 0xA
-	.ds 		0 - SDisk
 	.db 0xA, 0x0
 
 MonitorOString:

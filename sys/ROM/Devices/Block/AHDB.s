@@ -24,16 +24,34 @@ AHDBInfoRemove === 0x2
 
 AHDBInt === 0x31
 
+AHDBSpinTimeout === 0x100000
+
 AHDSpin:
 	push r0
+	push r1
+	li r1, 0
 
 .spin:
+	cmpi r1, AHDBSpinTimeout
+	bge .timeout
+
+	addi r1, r1, 1
+
 	lri.b r0, AHDSpinning
 	cmpi r0, 0
 	bne .spin
 
+.out:
+	pop r1
 	pop r0
 	ret
+
+.timeout:
+	li r0, AHDBStringTimeout
+	call PutString
+
+	sii.b AHDSpinning, 0
+	b .out
 
 AHDInterrupt:
 	pusha
@@ -75,19 +93,100 @@ AHDBWarningString:
 	.ds Please restart or you may brutally mess something up.
 	.db 0xA, 0x0
 
-;r0 - drive number
-AHDRegister:
+;just polls all drives and displays info to the user
+AHDBPollAll:
+	push r0
 	push r1
 
-	lri.b r2, AHDLastMin
-	addi r1, r2, AHDBDevTab
-	srr.b r1, r0
+	li r0, AHDBStringPoll
+	call PutString
 
-	addi r2, r2, 1
-	sir.b AHDLastMin, r2
+	li r0, 0
+
+.loop:
+	cmpi r0, 8
+	be .out
+
+	push r0
+	call AHDPoll
+	cmpi r0, 1
+	be .ddec
+	pop r0
+
+.cont:
+	addi r0, r0, 1
+	b .loop
+
+.ddec:
+	li r0, AHDBStringA
+	call PutString
+
+	pop r0
+	push r0
+	call PutInteger
+
+	li r0, AHDBStringB
+	call PutString
+
+	mov r0, r1
+	call PutIntegerD
+
+	li r0, AHDBStringC
+	call PutString
+
+	muli r0, r1, 4096
+	call PutIntegerD
+
+	li r0, AHDBStringD
+	call PutString
+
+	pop r0
+	b .cont
+
+.out:
+	li r0, AHDBStringNM
+	call PutString
 
 	pop r1
+	pop r0
 	ret
+
+
+AHDBStringTimeout:
+	.ds AHDB ERROR: DMA timed out.
+	.db 0xA, 0x0
+
+AHDBStringPoll:
+	.ds Polling AHDB...
+	.db 0xA
+	.ds drives:
+	.db 0xA, 0x0
+
+AHDBStringA:
+	.db 0x9
+	.ds ahd
+	.db 0
+
+AHDBStringB:
+	.ds : 
+	.db 0
+
+AHDBStringC:
+	.ds  blocks, 
+	.db 0
+
+AHDBStringD:
+	.ds  bytes.
+	.db 0xA, 0x0
+
+AHDBStringNM:
+	.db 0x9
+	.ds none more.
+	.db 0xA, 0x0
+
+AHDBDName:
+	.ds ahd
+	.db 0x0
 
 AHDBInit:
 	sii.b AHDSpinning, 0
@@ -95,6 +194,12 @@ AHDBInit:
 	li r0, AHDBInt
 	li r1, AHDInterrupt
 	call InterruptRegister
+
+	li r0, AHDBDName
+	li r1, AHDReadBlock
+	li r2, AHDWriteBlock
+	li r3, AHDBPollAll
+	call BlockDriverRegister
 
 	ret
 

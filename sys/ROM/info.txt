@@ -1,0 +1,5 @@
+character devices:
+
+0 - serial port
+1 - graphical console
+2 - keyboard

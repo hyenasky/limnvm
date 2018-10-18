@@ -134,7 +134,7 @@ function ahdb.new(vm, c)
 				b.info(0, block)
 			elseif v == 3 then -- write block
 				local block = port19
-				local paddr = port1B
+				local paddr = port1A
 
 				local d = b.drives[selected]
 
