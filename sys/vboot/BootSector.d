@@ -1,9 +1,9 @@
-#include "Runtime.d"
+#include "TinyRuntime.d"
 
 (*
 
 Stage Zero bootloader.
-Finds a bootable partition, loads sectors 0-7 from it, and jumps into it.
+Finds a bootable partition, loads sectors 1-15 from it, and jumps into it.
 
 *)
 
@@ -42,8 +42,17 @@ const VDBCache 0x100000
 
 const PartitionBootable 0x1
 
+buffer PromptLine 6
+
+buffer PartitionStart 32
+
 procedure Error (* string -- *)
 	"Panic: " PutString PutString
+end
+
+procedure Prompt (* -- *)
+	"@" PutString
+	PromptLine dup StringZero 5 GetString
 end
 
 procedure Main (* ciptr bootdev -- *)
@@ -56,6 +65,17 @@ procedure Main (* ciptr bootdev -- *)
 	CIPtr!
 
 	"\n\n==== Bootloader ====\n" PutString
+
+	"\nbootdev? default:" PutString
+	BootDevice@ PutInteger
+	CR
+
+	Prompt
+
+	if (PromptLine gb 0 ~=)
+		PromptLine StringToInteger BootDevice!
+	end
+
 	"boot0 on blk" PutString
 	BootDevice@ PutInteger
 	CR
@@ -64,9 +84,8 @@ procedure Main (* ciptr bootdev -- *)
 	0 VDBCache BootDevice@ ReadBlock
 
 	"Disk Info:\n" PutString
-	"\tMagic: " PutString VDBCache VDB_Magic + dup PutString CR
 
-	if (@ 0x4E4D494C ~=) (* check for signature *)
+	if (VDBCache VDB_Magic + @ 0x4E4D494C ~=) (* check for signature *)
 		"Invalid volume descriptor.\n" Error
 		return
 	end
@@ -77,20 +96,92 @@ procedure Main (* ciptr bootdev -- *)
 
 	auto i
 	0 i!
+
 	auto ptr
 	VDBCache VDB_PartitionTable + ptr!
+
+	auto ps
+	0 ps!
+
+	auto bootp
+	0 bootp!
+
+	auto bpcount
+	0 bpcount!
 	while (i@ 8 <)
 		if (ptr@ PTE_Status + gb PartitionBootable ==)
 			'\t' StdPutChar i@ PutIntegerD ": " PutString
 			ptr@ PutString
 			CR
+
+			if (i@ 0 ==)
+				ps@ 2 + ps!
+			end
+
+			ps@ i@ 4 * PartitionStart + !
+			ptr@ PTE_Blocks + @ ps@ + ps!
+
+			i@ bootp!
+			bpcount@ 1 + bpcount!
+		end else
+			0xFFFFFFFF i@ 4 * PartitionStart + !
 		end
 
 		ptr@ PTE_SIZEOF + ptr!
 		i@ 1 + i!
 	end
 
-	while (1) end
+	if (bpcount@ 0 ==)
+		"No bootable partitions.\n" Error
+		return
+	end
+
+	if (bpcount@ 1 >)
+		"boot partition? default:" PutString
+		bootp@ PutInteger CR
+		Prompt
+
+		if (PromptLine gb 0 ~=)
+			PromptLine StringToInteger bootp!
+		end
+	end
+
+	BootDevice@ PutInteger ':' StdPutChar bootp@ PutIntegerD CR
+
+	(* now load block 1-15 of selected partition at 0x100000, this contains boot1 *)
+
+	bootp@ 4 * PartitionStart + @ ps!
+
+	if (ps@ 0xFFFFFFFF ==)
+		"Bad partition\n" Error
+		return
+	end
+
+	0x100000 ptr!
+
+	1 i!
+	while (i@ 16 <)
+		ps@ i@ + ptr@ BootDevice@ ReadBlock
+
+		ptr@ 4096 + ptr!
+		i@ 1 + i!
+	end
+
+	if (0x100000@ 0x0C001CA7 ~=)
+		"invalid boot1\n" Error
+		return
+	end
+
+	CIPtr@ BootDevice@ bootp@ PartitionStart asm "
+		call _POP
+		mov r3, r0
+		call _POP
+		mov r2, r0
+		call _POP
+		mov r1, r0
+		call _POP
+		call 0x100004
+	"
 end
 
 

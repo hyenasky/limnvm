@@ -17,7 +17,7 @@ InterruptInit:
 	cmpi r0, InterruptVectorTableEnd
 	bge .end
 
-	sri.l r0, InterruptUnknown
+	sri.l r0, 0
 
 	addi r0, r0, 4
 	b .loop
@@ -31,6 +31,3 @@ InterruptInit:
 	bseti rs, rs, 1 ;enable interrupts
 
 	ret
-
-InterruptUnknown:
-	iret

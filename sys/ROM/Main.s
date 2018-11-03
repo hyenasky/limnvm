@@ -66,7 +66,7 @@ himsg:
 	.db 0xA
 	.ds Boot firmware for AISAv2 Lemon
 	.db 0xA
-	.ds Written by Will and Rainer
+	.ds Written by Will
 	.db 0xA, 0xA, 0xA, 0xA, 0x0
 
 Halt:

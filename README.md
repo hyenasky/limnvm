@@ -38,21 +38,15 @@ Improvements are being made :)
 
 ### Short term
 
-1. Block device abstraction in the ROM
-2. Actual disk device
-3. Finish dragonfruit compiler
-
-### Medium term
-
 1. FAT32 bootloader
 2. Improving the control GUI
 3. Beginning a kernel
 
-### Long term
+### Medium term
 
 1. Getting the kernel to a functional, unix-like state
 2. Creating a shell and command line utilities
 
-### Very long term
+### Long term
 
 1. Build a windowed GUI

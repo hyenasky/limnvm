@@ -19,7 +19,7 @@ rom:
 	$(ASM) $(ROM) $(ROMBIN)
 
 run:
-	$(EMU) -rom $(ROMBIN)  -ahd $(DISKTOOLS) -ahd $(VHD)
+	$(EMU) -rom $(ROMBIN) -ahd $(DISKTOOLS) -ahd $(VHD) -outs
 
 vboot:
 	$(DRAGONC) ./sys/vboot/BootSector.d ./tmp/VBootSector.s
@@ -29,7 +29,7 @@ vboot:
 	$(ASM) ./tmp/vboot.s ./tmp/vboot.o
 
 	dd if=./tmp/VBootSector.o of=$(VHD) bs=4096 conv=notrunc seek=1
-	dd if=./tmp/vboot.o of=$(VHD) bs=4096 conv=notrunc seek=2
+	dd if=./tmp/vboot.o of=$(VHD) bs=4096 conv=notrunc seek=3
 
 disktools:
 	$(DRAGONC) ./sys/disktools/BootSector.d ./tmp/DTBootSector.s

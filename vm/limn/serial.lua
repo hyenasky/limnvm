@@ -65,9 +65,6 @@ function serial.new(vm, c)
 		end
 	end
 
-	vm.registerCallback("update", function (dt)
-	end)
-
 	vm.registerOpt("-ins", function (arg, i)
 		s.stream(io.read("*a"))
 

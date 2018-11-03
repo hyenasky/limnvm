@@ -1,10 +1,12 @@
 #include "Runtime.d"
+#include "IDisk.d"
+#include "afs.d"
 
 asm preamble "
 
 .org 0x100000
 
-.ds VBOO
+.dl 0x0C001CA7
 
 ;r0 contains pointer to client interface
 call _PUSH
@@ -12,12 +14,27 @@ call _PUSH
 ;r1 contains blockdev number
 mov r0, r1
 call _PUSH
+
+;r2 contains boot partition
+mov r0, r2
+call _PUSH
+
+;r3 contains partition table ptr
+mov r0, r3
+call _PUSH
+
 b Main
 
 "
 
-procedure Main (* ciptr bootdev -- *)
+procedure Main (* ciptr bootdev bootpartition partitiontable -- *)
 	auto BootDevice
+	auto BootPartition
+	auto PartitionTable
+
+	PartitionTable!
+
+	BootPartition!
 
 	(* remember the boot device *)
 	BootDevice!
@@ -25,16 +42,17 @@ procedure Main (* ciptr bootdev -- *)
 	(* initialize the client interface *)
 	CIPtr!
 
-	"boot1 on blk" PutString
+	"\nboot1 on " PutString
 	BootDevice@ PutInteger
-	'\n' StdPutChar
+	':' StdPutChar BootPartition@ PutInteger CR
 
-	"Ooh-ooh... we're halfway there! Ooh-ooh... squidward on a chair!\n" FatalError
+	BootDevice@ BootPartition@ PartitionTable@ IDiskInit
+	AFSInit
+
+	"this is where we'll mount the filesystem and load the kernel or whatever\n" Panic
 end
 
-procedure FatalError (* errorstr -- *)
-	"\nFatal Error: " PutString
+procedure Panic (* errorstr -- *)
+	"Panic: " PutString
 	PutString
-
-	while (1) end
 end

@@ -5,10 +5,10 @@ ConsoleFont:
 
 ConsoleFontWidth === 8
 ConsoleFontHeight === 10
-ConsoleOffsetX === 64
-ConsoleOffsetY === 64
-ConsoleBorderTotalX === 128
-ConsoleBorderTotalY === 128
+ConsoleOffsetX === 48
+ConsoleOffsetY === 48
+ConsoleBorderTotalX === 96
+ConsoleBorderTotalY === 96
 
 ConsoleFillColor === 0x63
 

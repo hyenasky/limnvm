@@ -23,12 +23,6 @@ local lexer = require(sd.."lexer")
 -- possibly bad design as it fucks up retargetability
 -- but whatever :D
 
-local types = {
-	["byte"] = 1,
-	["int"] = 2,
-	["long"] = 4,
-}
-
 local iwords = {
 	["procedure"] = function (out, stream)
 		local name = stream:extract()
@@ -220,6 +214,15 @@ local iwords = {
 
 		out:newauto(name[1])
 	end,
+	["set"] = function (out, stream) -- ( size area -- )
+		out:a("call _POP")
+		out:a("mov r1, r0")
+		out:a("call _POP")
+		-- r1: ptr
+		-- r0: size
+
+		out:a()
+	end,
 	["pointerof"] = function (out, stream)
 		local name = stream:extract()
 
@@ -236,6 +239,11 @@ local iwords = {
 		end
 
 		out:a("li r0, "..tostring(p))
+		out:a("call _PUSH")
+	end,
+	["bswap"] = function (out, stream)
+		out:a("call _POP")
+		out:a("bswap r0, r0")
 		out:a("call _PUSH")
 	end,
 	["=="] = function (out, stream)
@@ -325,6 +333,20 @@ local iwords = {
 		out:a("and r0, r0, r1")
 		out:a("call _PUSH")
 	end,
+	[">>"] = function (out, stream)
+		out:a("call _POP")
+		out:a("mov r1, r0")
+		out:a("call _POP")
+		out:a("rsh r0, r0, r1")
+		out:a("call _PUSH")
+	end,
+	["<<"] = function (out, stream)
+		out:a("call _POP")
+		out:a("mov r1, r0")
+		out:a("call _POP")
+		out:a("lsh r0, r0, r1")
+		out:a("call _PUSH")
+	end,
 	["dup"] = function (out, stream)
 		out:a("call _POP")
 		out:a("call _PUSH")
@@ -370,6 +392,13 @@ local iwords = {
 		out:a("div r0, r0, r1")
 		out:a("call _PUSH")
 	end,
+	["%"] = function (out, stream)
+		out:a("call _POP")
+		out:a("mov r1, r0")
+		out:a("call _POP")
+		out:a("mod r0, r0, r1")
+		out:a("call _PUSH")
+	end,
 	["("] = function (out, stream)
 		local t = stream:extract()
 
@@ -402,13 +431,15 @@ local iwords = {
 	end,
 	["sb"] = function (out, stream)
 		out:a("call _POP")
-		out:a("srr.b r0, r0")
-		out:a("call _PUSH")
+		out:a("mov r1, r0")
+		out:a("call _POP")
+		out:a("srr.b r1, r0")
 	end,
 	["si"] = function (out, stream)
 		out:a("call _POP")
-		out:a("srr.i r0, r0")
-		out:a("call _PUSH")
+		out:a("mov r1, r0")
+		out:a("call _POP")
+		out:a("srr.i r1, r0")
 	end,
 	["!"] = function (out, stream)
 		out:a("call _POP")

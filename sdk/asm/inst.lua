@@ -118,6 +118,10 @@ local inst = {
 	["brk"]   = {1, 0x46, {}},
 	["hlt"]   = {1, 0x47, {}},
 	["iret"]  = {1, 0x48, {}},
+
+-- extensions
+
+	["bswap"] = {3, 0x49, {1, 1}}
 }
 
 local regs = {

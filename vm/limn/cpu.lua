@@ -592,6 +592,23 @@ function cpu.new(vm, c)
 			return pc + 1
 		end,
 
+		-- extensions
+
+		[0x49] = function (pc) -- [bswap]
+			local ts = pgReg(fetchByte(pc + 2))
+
+			-- I actually hate lua for this
+			local swapped = 
+				bor(rshift(ts, 24),
+					bor(band(lshift(ts, 8), 0xFF0000),
+						bor(band(rshift(ts, 8), 0xFF00),
+							band(lshift(ts, 24), 0xFF000000))))
+
+			psReg(fetchByte(pc + 1), swapped)
+
+			return pc + 3
+		end,
+
 		-- temporary for vm debug purposes
 
 		[0xF0] = function (pc) -- [] dump all registers to terminal

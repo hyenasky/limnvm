@@ -120,7 +120,13 @@ function ahdb.new(vm, c)
 				-- block IO will just halt and hang it
 				-- this should probably raise an error or something
 				-- haha die
+				print("reading block "..tostring(block).." to $"..string.format("%x", paddr).." on disk "..tostring(selected))
+
 				if not d then
+					return
+				end
+
+				if block > d.blocks then
 					return
 				end
 
@@ -138,7 +144,13 @@ function ahdb.new(vm, c)
 
 				local d = b.drives[selected]
 
+				print("writing block "..tostring(block).." from $"..string.format("%x", paddr).." on disk "..tostring(selected))
+
 				if not d then
+					return
+				end
+
+				if block > d.blocks then
 					return
 				end
 

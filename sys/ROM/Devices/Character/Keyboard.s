@@ -162,6 +162,9 @@ KeyboardInterrupt:
 	addi r0, r0, KeyboardLayoutCtrl
 	lrr.b r0, r0 ;get char
 
+	cmpi r0, "c" ;reset if ctrl-C
+	be Reset
+
 	b .char
 
 .special:

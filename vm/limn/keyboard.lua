@@ -129,6 +129,15 @@ function keydev.new(vm, c)
 		end
 	end)
 
+	local function stream(...)
+		t = {...}
+
+		for k,v in ipairs(t) do
+			int(0x30)
+			kbd.kba(layout.m[v])
+		end
+	end
+
 	return kbd
 end
 
