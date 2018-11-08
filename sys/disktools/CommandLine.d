@@ -232,27 +232,24 @@ procedure BWriteBlock (* block buffer partition -- *)
 	p@ 4 * PartitionTable + @ block@ + buf@ SelectedBlockDev@ WriteBlock
 end
 
-struct AFSSuperblock
-	4 Magic
-	4 Blocks
-	4 ReservedBlocks
-	4 NumFiles
-	4 NumDirs
-	4 NumInodes
-	4 UsedInodes
-	4 StartBlockBitmap
-	4 SizeBlockBitmap
-	4 StartInodeBitmap
-	4 SizeInodeBitmap
-	4 StartInodeBlocks
-	4 SizeInodeBlocks
-	4 StartData
-	1 Dirty
-	32 VolName
-endstruct
+const VFSSuperblockNumber 0x0
+const VFSSuperblockMagic 0xAFBBAFBB
+const VFSSuperblockVersion 0x4
 
-const AFSSuperblockNumber 0x0
-const AFSSuperblockMagic 0xAF5AF5AF
+struct VFSSuperblock
+	1 Version
+	4 Magic
+	4 VolSize
+	4 NumFiles
+	1 Dirty
+	4 BlocksUsed
+	4 NumDirs
+	4 NumReservedBlocks
+	4 FATStart
+	4 FATSize
+	4 Root
+	4 DataStart
+endstruct
 
 procedure CmdFormatAFS (* cstr -- *)
 	auto part
@@ -286,10 +283,13 @@ procedure CmdFormatAFS (* cstr -- *)
 	end
 
 	(* plop magic num *)
-	AFSSuperblockMagic MiscCache AFSSuperblock_Magic + !
+	VFSSuperblockMagic MiscCache VFSSuperblock_Magic + !
+
+	(* plop version *)
+	VFSSuperblockVersion MiscCache VFSSuperblock_Version + sb
 
 	"writing superblock\n" PutString
-	AFSSuperblockNumber MiscCache part@ BWriteBlock
+	VFSSuperblockNumber MiscCache part@ BWriteBlock
 end
 
 procedure CmdInfo (* cstr -- *)

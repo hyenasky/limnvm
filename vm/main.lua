@@ -31,6 +31,7 @@ vm.cb.mousereleased = {}
 vm.cb.mousemoved = {}
 vm.cb.wheelmoved = {}
 vm.cb.textinput = {}
+vm.cb.filedropped = {}
 
 function vm.registerCallback(t, cb)
 	local t = vm.cb[t]
@@ -197,5 +198,13 @@ function love.textinput(text)
 
 	if cpanel.enabled then
 		panel.textinput(text)
+	end
+end
+
+function love.filedropped(file)
+	local vct = vm.cb.filedropped
+	local vcl = #vct
+	for i = 1, vcl do
+		vct[i](file)
 	end
 end

@@ -165,8 +165,6 @@ function ahdb.new(vm, c)
 			elseif v == 4 then -- read info
 				port19 = infowhat
 				port1A = infodetails
-
-				infowhat, infodetails = 0, 0
 			elseif v == 5 then -- poll drive
 				local id = port19
 
@@ -201,6 +199,22 @@ function ahdb.new(vm, c)
 		local image = arg[i + 1]
 
 		local x,y = b.attach(true)
+
+		if not x then
+			print("couldn't attach image "..image)
+		else
+			print(string.format("image %s on ahd%d", image, x))
+		end
+
+		y:image(image)
+
+		return 2
+	end)
+
+	vm.registerCallback("filedropped", function (file)
+		local image = file:getFilename()
+
+		local x,y = b.attach()
 
 		if not x then
 			print("couldn't attach image "..image)

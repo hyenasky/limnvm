@@ -27,7 +27,7 @@ procedure Main (* ciptr bootdev -- *)
 	(* initialize the client interface *)
 	CIPtr!
 
-	"\n\n==== Disktools ====\n" PutString
+	"==== Disktools ====\n" PutString
 
 	CommandLine
 end

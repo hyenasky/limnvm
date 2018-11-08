@@ -20,7 +20,7 @@ ClientInterface:
 	.dl StringTokenize
 	.dl Reset
 	.dl InterruptRegister
-	.dl 0
+	.dl StringCompare
 	.dl 0
 	.dl 0
 	.dl 0

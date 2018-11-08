@@ -9,6 +9,7 @@ ROMBIN=./bin/boot.bin
 ROMBUILD=./sys/ROM/build
 
 VHD=./bin/hd0.img
+VNFS=./bin/vnixfs.img
 DISKTOOLS=./bin/disktools.img
 
 all:
@@ -21,6 +22,15 @@ rom:
 run:
 	$(EMU) -rom $(ROMBIN) -ahd $(DISKTOOLS) -ahd $(VHD) -outs
 
+kernel:
+	$(DRAGONC) ./sys/vnix/Kernel.d ./tmp/vnix.s
+	$(ASM) ./tmp/vnix.s ./tmp/vnix
+
+	./vfu ./bin/vnixfs.img w /vnix ./tmp/vnix
+
+vnfs:
+	dd if=$(VNFS) of=$(VHD) conv=notrunc seek=2 bs=4096
+
 vboot:
 	$(DRAGONC) ./sys/vboot/BootSector.d ./tmp/VBootSector.s
 	$(ASM) ./tmp/VBootSector.s ./tmp/VBootSector.o
@@ -29,7 +39,7 @@ vboot:
 	$(ASM) ./tmp/vboot.s ./tmp/vboot.o
 
 	dd if=./tmp/VBootSector.o of=$(VHD) bs=4096 conv=notrunc seek=1
-	dd if=./tmp/vboot.o of=$(VHD) bs=4096 conv=notrunc seek=3
+	dd if=./tmp/vboot.o of=$(VNFS) bs=4096 conv=notrunc seek=1
 
 disktools:
 	$(DRAGONC) ./sys/disktools/BootSector.d ./tmp/DTBootSector.s

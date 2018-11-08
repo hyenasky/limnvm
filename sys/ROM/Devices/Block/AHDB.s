@@ -75,8 +75,15 @@ AHDInterrupt:
 	b .out
 
 .hotplug:
-	li r0, AHDBWarningString
+	li r0, AHDBConnectedString
 	call PutString
+
+	li r0, AHDBPortB
+	call BusReadByte
+	call PutIntegerD
+
+	li r0, 0xA
+	call StdPutChar
 
 	b .out
 
@@ -87,11 +94,9 @@ AHDInterrupt:
 	popa
 	iret
 
-AHDBWarningString:
-	.ds Do not hotplug disks in Antecedent!
-	.db 0xA
-	.ds Please restart or you may brutally mess something up.
-	.db 0xA, 0x0
+AHDBConnectedString:
+	.ds AHDB: connected ahd
+	.db 0x0
 
 ;just polls all drives and displays info to the user
 AHDBPollAll:

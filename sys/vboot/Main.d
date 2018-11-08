@@ -1,6 +1,6 @@
 #include "Runtime.d"
 #include "IDisk.d"
-#include "afs.d"
+#include "vnixfat.d"
 
 asm preamble "
 
@@ -42,14 +42,36 @@ procedure Main (* ciptr bootdev bootpartition partitiontable -- *)
 	(* initialize the client interface *)
 	CIPtr!
 
-	"\nboot1 on " PutString
+	"Boot1 on " PutString
 	BootDevice@ PutInteger
 	':' StdPutChar BootPartition@ PutInteger CR
 
 	BootDevice@ BootPartition@ PartitionTable@ IDiskInit
-	AFSInit
+	VFSInit
 
-	"this is where we'll mount the filesystem and load the kernel or whatever\n" Panic
+	"Loading kernel image\n" PutString
+
+	"vnix" 0x200000 VFSLoadFile
+	if (0 ==)
+		"Failed to load kernel image\n" Panic
+		return
+	end
+
+	if (0x200000@ 0x58494E56 ~=)
+		"Invalid kernel image\n" Panic
+		return
+	end
+
+	CIPtr@ BootDevice@ BootPartition@ PartitionTable@ asm "
+		call _POP
+		mov r3, r0
+		call _POP
+		mov r2, r0
+		call _POP
+		mov r1, r0
+		call _POP
+		call 0x200004
+	"
 end
 
 procedure Panic (* errorstr -- *)

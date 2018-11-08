@@ -137,7 +137,39 @@ StringTokenize:
 	pop r3
 	ret
 
+;r0 - string one
+;r1 - string two
+;outputs:
+;r0 - are they the same?
+StringCompare:
+	push r3
+	push r2
 
+.loop:
+	lrr.b r2, r0
+	lrr.b r3, r1
+
+	cmp r2, r3
+	bne .false
+
+	cmpi r2, 0
+	be .true
+
+	addi r0, r0, 1
+	addi r1, r1, 1
+	b .loop
+
+.true:
+	li r1, 1
+
+.out:
+	pop r2
+	pop r3
+	ret
+
+.false:
+	li r0, 0
+	b .out
 
 
 

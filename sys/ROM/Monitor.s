@@ -136,8 +136,11 @@ MonitorDoLine:
 	push r2
 	push r3
 	push r4
+	push r5
 	lri.b r2, ConsoleBGColor
 	lri.b r3, ConsoleFGColor
+
+	li r5, 0
 
 .cmdzloop:
 	cmpi r1, 0x100
@@ -149,15 +152,21 @@ MonitorDoLine:
 	sub r0, r4, r1
 	sir.b ConsoleFGColor, r0
 
-	li r0, MonitorZString
-	call PutString
+	cmpi r5, 0x11
+	be .cmdzno ;don't clear the screen
+	
+	mov r0, r5
+	call StdPutChar
 
+.cmdzno:
+	addi r5, r5, 1
 	addi r1, r1, 1
 	b .cmdzloop
 
 .cmdzloopd:
 	sir.b ConsoleBGColor, r2
 	sir.b ConsoleFGColor, r3
+	pop r5
 	pop r4
 	pop r3
 	pop r2
@@ -355,10 +364,6 @@ MonitorPString3:
 
 MonitorPString4:
 	.ds  bytes
-	.db 0x0
-
-MonitorZString:
-	.ds Colors! 
 	.db 0x0
 
 

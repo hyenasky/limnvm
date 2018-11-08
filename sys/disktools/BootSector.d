@@ -36,11 +36,11 @@ procedure Main (* ciptr bootdev -- *)
 	(* initialize the client interface *)
 	CIPtr!
 
-	"\n\nbooting disktools on blk" PutString
+	"Booting disktools on blockdev" PutString
 	BootDevice@ PutInteger
 	CR
 
-	"loading disk" PutString
+	"Loading disk" PutString
 
 	auto sector
 	2 sector!
@@ -55,10 +55,10 @@ procedure Main (* ciptr bootdev -- *)
 	end
 	CR
 
-	"verifying integrity\n" PutString
+	"Verifying integrity\n" PutString
 
 	if (Base@ 0x4F4F5444 ~=)
-		"disktools corrupted!\n" PutString
+		"Disktools corrupted!\n" PutString
 		return
 	end
 

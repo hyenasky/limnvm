@@ -1,4 +1,4 @@
-#include "TinyRuntime.d"
+#include "Runtime.d"
 
 (*
 
@@ -64,9 +64,9 @@ procedure Main (* ciptr bootdev -- *)
 	(* initialize the client interface *)
 	CIPtr!
 
-	"\n\n==== Bootloader ====\n" PutString
+	"==== Bootloader ====\n" PutString
 
-	"\nbootdev? default:" PutString
+	"bootdev? default:" PutString
 	BootDevice@ PutInteger
 	CR
 
@@ -146,7 +146,7 @@ procedure Main (* ciptr bootdev -- *)
 		end
 	end
 
-	BootDevice@ PutInteger ':' StdPutChar bootp@ PutIntegerD CR
+	"Selected " PutString BootDevice@ PutInteger ':' StdPutChar bootp@ PutIntegerD CR
 
 	(* now load block 1-15 of selected partition at 0x100000, this contains boot1 *)
 
@@ -168,7 +168,7 @@ procedure Main (* ciptr bootdev -- *)
 	end
 
 	if (0x100000@ 0x0C001CA7 ~=)
-		"invalid boot1\n" Error
+		"Invalid boot1\n" Error
 		return
 	end
 

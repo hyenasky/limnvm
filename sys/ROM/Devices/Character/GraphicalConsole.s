@@ -4,6 +4,8 @@ ConsoleFont:
 ;constants
 
 ConsoleFontWidth === 8
+ConsoleFontWidthA === 7 ;ConsoleFontWidth - 1
+ConsoleFontBytesPerRow === 1
 ConsoleFontHeight === 10
 ConsoleOffsetX === 48
 ConsoleOffsetY === 48
@@ -341,7 +343,8 @@ ConsoleDrawChar:
 
 	mov r10, r3
 
-	muli r5, r0, ConsoleFontHeight
+	muli r5, r0, ConsoleFontBytesPerRow
+	muli r5, r5, ConsoleFontHeight
 	addi r5, r5, ConsoleFont
 	li r3, 0
 .yloop:
@@ -350,10 +353,10 @@ ConsoleDrawChar:
 
 	;body of y loop
 
-	lrr.b r6, r5
+	lrr.l r6, r5
 
 	li r4, 0 ;ctr
-	li r8, 7 ;reverse ctr
+	li r8, ConsoleFontWidthA ;reverse ctr
 .xloop:
 	cmpi r4, ConsoleFontWidth
 	bge .ynext
@@ -389,7 +392,7 @@ ConsoleDrawChar:
 	b .xloop
 
 .ynext:
-	addi r5, r5, 1
+	addi r5, r5, ConsoleFontBytesPerRow
 	addi r3, r3, 1
 	b .yloop
 
