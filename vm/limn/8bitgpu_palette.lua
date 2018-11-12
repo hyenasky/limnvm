@@ -3,6 +3,7 @@ struct {
 	unsigned char r;
 	unsigned char g;
 	unsigned char b;
+	uint32_t full;
 }[256]
 ]])
 
@@ -16,6 +17,7 @@ for i = 0, 255 do
 	ps[i].r = rshift(pc, 16)
 	ps[i].g = band(rshift(pc, 8), 0xFF)
 	ps[i].b = band(pc, 0xFF)
+	ps[i].full = pc
 end
 
 return ps

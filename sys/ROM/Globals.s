@@ -35,6 +35,12 @@ AHDSpinning === 260 ;byte
 
 BlockLastMajor === 262 ;byte
 
+BlitterSpinning === 263 ;byte
+
+MousePressed === 264 ;byte
+MouseX === 265 ;int
+MouseY === 267 ;int
+
 ;control variables
 ResetReason === 384 ;byte
 

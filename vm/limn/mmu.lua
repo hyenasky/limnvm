@@ -63,6 +63,27 @@ function mmu.new(vm, c, memsize)
 	end
 	local unmapArea = m.unmapArea
 
+	-- blitter acceleration hack
+	function m.copyRow(s1,sz1, s2,sz2)
+		local m = areas[rshift(s1, 17)]
+
+		if m ~= 0 then -- mapped
+			local e = areah[m](0, 0, band(ptr, 0x1FFFF))
+
+			return areah[m](0, 0, band(ptr, 0x1FFFF))
+		end
+
+		-- no match. physmem it is
+
+		if (physstart <= ptr) and (physend >= ptr) then
+			local e = physmem[ptr - physstart]
+
+			return physmem[ptr - physstart]
+		end
+
+		return 0
+	end
+
 	--translated address space functions:
 	--post-paging translation addresses
 	--physmem starts at 0 in the translated address space
@@ -79,7 +100,7 @@ function mmu.new(vm, c, memsize)
 		if m ~= 0 then -- mapped
 			local e = areah[m](0, 0, band(ptr, 0x1FFFF))
 
-			return areah[m](0, 0, band(ptr, 0x1FFFF))
+			return e
 		end
 
 		-- no match. physmem it is
@@ -87,7 +108,7 @@ function mmu.new(vm, c, memsize)
 		if (physstart <= ptr) and (physend >= ptr) then
 			local e = physmem[ptr - physstart]
 
-			return physmem[ptr - physstart]
+			return e
 		else
 			mmu.fault(7) -- this is cpu dependent
 		end

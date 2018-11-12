@@ -1,21 +1,21 @@
 ConsoleFont:
-	.static Assets/READABLE.F10
+	.static Assets/font.bmp
 
 ;constants
 
-ConsoleFontWidth === 8
-ConsoleFontWidthA === 7 ;ConsoleFontWidth - 1
-ConsoleFontBytesPerRow === 1
-ConsoleFontHeight === 10
+ConsoleFontWidth === 12
+ConsoleFontWidthA === 11 ;ConsoleFontWidth - 1
+ConsoleFontBytesPerRow === 2
+ConsoleFontHeight === 25
 ConsoleOffsetX === 48
-ConsoleOffsetY === 48
+ConsoleOffsetY === 0
 ConsoleBorderTotalX === 96
-ConsoleBorderTotalY === 96
+ConsoleBorderTotalY === 0
 
 ConsoleFillColor === 0x63
 
 ConsoleBGDefault === 0x63
-ConsoleFGDefault === 0x00
+ConsoleFGDefault === 0x12
 
 ConsoleInit:
 	push r0
@@ -87,37 +87,12 @@ ConsoleNewline:
 	cmp r0, r1
 	bl .out
 
-	;======== TODO fancy fast scrolling ========
+	li r0, ConsoleFontHeight
+	li r1, ConsoleFillColor
+	call GraphicsScrollScreen
 
-	;li r0, ConsoleOffsetX
-	;li r1, ConsoleOffsetY
-
-	;lri.b r2, ConsoleWidth
-	;muli r2, r2, ConsoleFontWidth
-	;addi r2, r2, ConsoleOffsetX
-
-	;lri.b r3, ConsoleHeight
-	;muli r3, r3, ConsoleFontHeight
-	;addi r3, r3, ConsoleOffsetY
-
-	;li r4, ConsoleFontHeight
-	;lri.l r5, ConsoleBGFill
-	;call GraphicsScrollAreaFast ;gotta implement this bad boi
-
-	;======== Comment out for now cuz slow af ======
-
-	;ConsoleFillPattern === 0x63636363
-
-	;li r0, ConsoleFontHeight
-	;li r1, ConsoleFillPattern
-	;call GraphicsScrollScreen
-
-	;================================================
-
-	;lri.b r1, ConsoleHM
-	;sir.i ConsoleY, r1
-
-	call ConsoleClear
+	lri.b r1, ConsoleHM
+	sir.i ConsoleY, r1
 
 .out:
 	pop r5

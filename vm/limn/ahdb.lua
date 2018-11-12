@@ -7,36 +7,38 @@ local ahdb = {}
 
 -- interrupt 0x31 is raised when new information is available
 
--- port 0x18: commands
+-- port 0x19: commands
 --	0: idle
 --	1: select drive
---		port 19: ID 0-7
+--		port 1A: ID 0-7
 --	2: read block 
---		port 19: block number
---		port 1A: 32-bit physical buffer address
+--		port 1A: block number
+--		port 1B: 32-bit physical buffer address
 --	3: write block
---		port 19: block number
---		port 1A: 32-bit physical buffer address
+--		port 1A: block number
+--		port 1B: 32-bit physical buffer address
 --	4: read new information
---		port 19: what happened?
+--		port 1A: what happened?
 --			0: DMA transfer complete
 --				details: block number
 --			1: drive attached
 --				details: drive ID
 --			2: drive removed
 --				details: drive ID
---		port 1A: details
+--		port 1B: details
 --	5: poll drive
---		port 19: drive ID
+--		port 1A: drive ID
 --	returns:
---		port 19: bitfield
+--		port 1A: bitfield
 --			bit 0: drive attached here?
---		port 1A: size in 4kb blocks
--- port 0x19: data
+--		port 1B: size in 4kb blocks
 -- port 0x1A: data
+-- port 0x1B: data
 
 function ahdb.new(vm, c)
 	local b = {}
+
+	local log = vm.log.log
 
 	local bus = c.bus
 	local readByte = c.mmu.TfetchByte
@@ -103,7 +105,7 @@ function ahdb.new(vm, c)
 	local port19 = 0
 	local port1A = 0
 
-	bus.addPort(0x18, function (s, t, v)
+	bus.addPort(0x19, function (s, t, v)
 		if t == 0 then
 			return 0
 		else
@@ -120,7 +122,7 @@ function ahdb.new(vm, c)
 				-- block IO will just halt and hang it
 				-- this should probably raise an error or something
 				-- haha die
-				print("reading block "..tostring(block).." to $"..string.format("%x", paddr).." on disk "..tostring(selected))
+				log("reading block "..tostring(block).." to $"..string.format("%x", paddr).." from disk "..tostring(selected))
 
 				if not d then
 					return
@@ -144,7 +146,7 @@ function ahdb.new(vm, c)
 
 				local d = b.drives[selected]
 
-				print("writing block "..tostring(block).." from $"..string.format("%x", paddr).." on disk "..tostring(selected))
+				log("writing block "..tostring(block).." from $"..string.format("%x", paddr).." to disk "..tostring(selected))
 
 				if not d then
 					return
@@ -179,7 +181,7 @@ function ahdb.new(vm, c)
 		end
 	end)
 
-	bus.addPort(0x19, function (s, t, v)
+	bus.addPort(0x1A, function (s, t, v)
 		if t == 0 then
 			return port19
 		else
@@ -187,7 +189,7 @@ function ahdb.new(vm, c)
 		end
 	end)
 
-	bus.addPort(0x1A, function (s, t, v)
+	bus.addPort(0x1B, function (s, t, v)
 		if t == 0 then
 			return port1A
 		else

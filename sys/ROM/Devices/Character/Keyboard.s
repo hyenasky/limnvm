@@ -2,8 +2,8 @@
 
 KeyboardINum === 0x30
 
-KeyboardCmdPort === 0x16
-KeyboardDataPort === 0x17
+KeyboardCmdPort === 0x17
+KeyboardDataPort === 0x18
 
 KeyboardCmdPop === 0x1
 KeyboardCmdReset === 0x2

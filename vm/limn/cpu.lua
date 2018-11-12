@@ -648,7 +648,6 @@ function cpu.new(vm, c)
 					reg[32] = v
 					reg[0] = n
 					setState(0, 0)
-
 					table.remove(intq, 1)
 				end
 			end

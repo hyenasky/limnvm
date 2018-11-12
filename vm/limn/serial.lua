@@ -65,6 +65,11 @@ function serial.new(vm, c)
 		end
 	end
 
+	vm.registerOpt("-insf", function (arg, i)
+		s.stream(io.open(arg[i+1]):read("*a"))
+
+		return 2
+	end)
 	vm.registerOpt("-ins", function (arg, i)
 		s.stream(io.read("*a"))
 

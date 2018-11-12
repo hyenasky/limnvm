@@ -1,4 +1,14 @@
 Monitor:
+	lri.b r0, NVRAMLocAutorun
+	cmpi r0, 0
+	be .cont
+
+	;autorun
+
+	li r0, NVRAMLocAutorun
+	call MonitorDoLine
+
+.cont:
 	li r0, MonitorHi
 	call PutString
 
@@ -56,8 +66,18 @@ MonitorDoLine:
 
 	cmpi r1, "z"
 	be .cmdz
+
+	cmpi r1, "x"
+	be .cmdx
 	
 	b .notcmd
+
+.cmdx:
+	push r0
+	li r0, 0
+	call GraphicsBlitScreen
+	pop r0
+	b .out
 
 .cmdb:
 	push r0
@@ -295,7 +315,7 @@ MonitorDoLine:
 	ret
 
 MonitorHi:
-	.ds Monitor v0.3
+	.ds ROM Monitor v0.5
 	.db 0xA
 	.ds Type 'h' for help.
 	.db 0xA, 0x0

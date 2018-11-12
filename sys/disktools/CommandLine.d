@@ -110,7 +110,6 @@ procedure CLInit (* -- *)
 	pointerof CmdInfo 'i' CLRegisterCommand
 	pointerof CmdFormat 'f' CLRegisterCommand
 	pointerof CmdPartition 'p' CLRegisterCommand
-	pointerof CmdFormatAFS 'a' CLRegisterCommand
 end
 
 procedure CLPrompt (* -- *)
@@ -130,12 +129,11 @@ procedure CmdHelpText (* cstr -- *)
 	drop
 "h - help
 q - quit
-c<dev> - change to dev
 s - save changes
 i - print disk info
-f<name> - format (will overwrite VDB, partition table wiped out)
 p - partition
-a<partition> - format afs3\n" PutString
+f<name> - format (will overwrite VDB, partition table wiped out)
+c<dev> - change to dev\n" PutString
 end
 
 procedure CmdPartition (* cstr -- *)
@@ -230,66 +228,6 @@ procedure BWriteBlock (* block buffer partition -- *)
 	block!
 
 	p@ 4 * PartitionTable + @ block@ + buf@ SelectedBlockDev@ WriteBlock
-end
-
-const VFSSuperblockNumber 0x0
-const VFSSuperblockMagic 0xAFBBAFBB
-const VFSSuperblockVersion 0x4
-
-struct VFSSuperblock
-	1 Version
-	4 Magic
-	4 VolSize
-	4 NumFiles
-	1 Dirty
-	4 BlocksUsed
-	4 NumDirs
-	4 NumReservedBlocks
-	4 FATStart
-	4 FATSize
-	4 Root
-	4 DataStart
-endstruct
-
-procedure CmdFormatAFS (* cstr -- *)
-	auto part
-	StringToInteger part!
-
-	if (part@ 7 >)
-		"Bad partition\n" PutString
-		return
-	end
-
-	part@ 4 * PartitionTable + @
-	if (0xFFFFFFFF ==)
-		"Bad partition\n" PutString
-		return
-	end
-
-	(* construct and write superblock *)
-
-	(* zero out block *)
-	auto ptr
-	MiscCache ptr!
-
-	auto i
-	0 i!
-
-	while (i@ 4096 <)
-		0 ptr@ !
-
-		ptr@ 4 + ptr!
-		i@ 4 + i!
-	end
-
-	(* plop magic num *)
-	VFSSuperblockMagic MiscCache VFSSuperblock_Magic + !
-
-	(* plop version *)
-	VFSSuperblockVersion MiscCache VFSSuperblock_Version + sb
-
-	"writing superblock\n" PutString
-	VFSSuperblockNumber MiscCache part@ BWriteBlock
 end
 
 procedure CmdInfo (* cstr -- *)

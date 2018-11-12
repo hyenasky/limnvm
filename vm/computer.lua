@@ -15,17 +15,20 @@ function computer.new(vm, memsize)
 		c.panel:draw()
 	end)
 
-	-- compy
+	-- chipset
 	c.mmu = require("limn/mmu").new(vm, c, memsize)
 	c.cpu = require("limn/cpu").new(vm, c)
 	c.bus = require("limn/bus").new(vm, c)
 
 	-- devices
+	c.nvram = require("limn/nvram").new(vm, c)
 	c.rom = require("limn/rom").new(vm, c)
 	c.gpu = require("limn/8bitgpu").new(vm, c)
 	c.serial = require("limn/serial").new(vm, c)
 	c.keyboard = require("limn/keyboard").new(vm, c)
 	c.ahdb = require("limn/ahdb").new(vm, c)
+	c.blitter = require("limn/blitter").new(vm, c)
+	c.mouse = require("limn/mouse").new(vm, c)
 
 	-- init
 	c.cpu.reset()

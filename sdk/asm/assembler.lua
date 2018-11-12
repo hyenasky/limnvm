@@ -159,6 +159,7 @@ local function pass3(tokens) --register labels
 				strucs[tt[2]] = {}
 				istr = tt[2]
 			elseif tt[1] == ".static" then
+				print(bd..tt[2])
 				bc = bc + #io.open(bd..tt[2], "r"):read("*a")
 				out[#out+1] = ln
 			elseif tt[1] == ".db" then

@@ -1,6 +1,8 @@
 .include Devices/Bus.s
 .include Devices/MMU.s
 .include Devices/EBGraphics.s
+.include Devices/Blitter.s
+.include Devices/NVRAM.s
 
 .include Devices/Character/Serial.s
 .include Devices/Character/GraphicalConsole.s

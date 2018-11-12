@@ -21,8 +21,8 @@ ClientInterface:
 	.dl Reset
 	.dl InterruptRegister
 	.dl StringCompare
-	.dl 0
-	.dl 0
+	.dl BlitterOperation
+	.dl MmuGetRAM
 	.dl 0
 	.dl 0
 	.dl 0

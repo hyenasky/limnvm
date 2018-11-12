@@ -37,6 +37,12 @@ MmuInit:
 
 	ret
 
+;outputs:
+;r0 - RAM
+MmuGetRAM:
+	lri.l r0, TotalMemory
+	ret
+
 MmuStringA:
 	.ds RAM: 
 	.db 0x0

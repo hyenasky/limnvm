@@ -200,6 +200,10 @@ local iwords = {
 				break
 			end
 
+			if (t[2] ~= "number") and (t[2] ~= "string") then
+				print("unexpected "..t[2].." in table")
+			end 
+
 			-- TODO
 
 			t = stream:extract()

@@ -1,1 +1,1 @@
-lua5.1 vfutil/vfutil.lua "$@"
+./lua vfutil/vfutil.lua "$@"

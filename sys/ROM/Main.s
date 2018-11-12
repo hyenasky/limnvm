@@ -30,12 +30,20 @@ Reset:
 	call PutString
 
 .normal:
+	li r0, 0xA
+	call StdPutChar
+	li r0, 0xA
+	call StdPutChar
+
 	call MmuInit
+
+	call NVRAMInit
 
 	li r0, himsg
 	call PutString
 
 	call AHDBInit
+	call BlitterInit
 
 	call Monitor
 
@@ -44,30 +52,21 @@ Reset:
 BuildNum === #build
 
 himsg:
-	.ds   ___  _   _ _____ _____ _____ ___________ _____ _   _ _____ 
 	.db 0xA
-	.ds  / _ \| \ | |_   _|  ___/  __ |  ___|  _  |  ___| \ | |_   _|
-	.db 0xA
-	.ds / /_\ |  \| | | | | |__ | /  \| |__ | | | | |__ |  \| | | |  
-	.db 0xA
-	.ds |  _  | . ` | | | |  __|| |   |  __|| | | |  __|| . ` | | |  
-	.db 0xA
-	.ds | | | | |\  | | | | |___| \__/| |___| |/ /| |___| |\  | | |  
-	.db 0xA
-	.ds \_| |_\_| \_/ \_/ \____/ \____\____/|___/ \____/\_| \_/ \_/  
+	.ds 	Welcome to ANTECEDENT
 	.db 0xA
 	.db 0xA
-	.ds Version 1.1 (build 
+	.ds 	Version 1.1 (build 
 	.ds$ BuildNum
 	.ds )
 	.db 0xA
-	.ds Built on 
+	.ds 	Built on 
 	.ds$ __DATE
 	.db 0xA
-	.ds Boot firmware for AISAv2 Lemon
+	.ds 	Boot firmware for AISAv2 Lemon
 	.db 0xA
-	.ds Written by Will
-	.db 0xA, 0xA, 0xA, 0xA, 0x0
+	.ds 	Written by Will
+	.db 0xA, 0xA, 0x0
 
 Halt:
 	bclri rs, rs, 1 ;disable interrupts

@@ -32,6 +32,7 @@ vm.cb.mousemoved = {}
 vm.cb.wheelmoved = {}
 vm.cb.textinput = {}
 vm.cb.filedropped = {}
+vm.cb.quit = {}
 
 function vm.registerCallback(t, cb)
 	local t = vm.cb[t]
@@ -49,6 +50,8 @@ end
 local dbmsg = false
 
 function love.load(arg)
+	vm.log = require("log").init(vm)
+
 	vm.computer = require("computer").new(vm, 1024*1024*32) -- new computer with 32mb of mem
 
 	local i = 1
@@ -206,5 +209,13 @@ function love.filedropped(file)
 	local vcl = #vct
 	for i = 1, vcl do
 		vct[i](file)
+	end
+end
+
+function love.quit()
+	local vct = vm.cb.quit
+	local vcl = #vct
+	for i = 1, vcl do
+		vct[i]()
 	end
 end

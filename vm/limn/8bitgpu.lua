@@ -13,6 +13,8 @@ local palette = require("limn/8bitgpu_palette")
 --  0: idle
 --  1: get info
 --  2: draw rectangle
+--  3: enable vsync
+--  4: scroll
 -- port 0x13: data
 -- port 0x14: data
 -- port 0x15: data
@@ -36,8 +38,19 @@ function gpu.new(vm, c)
 	g.framebuffer = ffi.new("uint8_t[?]", fbs) -- least significant bit is left-most pixel
 	local framebuffer = g.framebuffer
 
+	g.imageData = love.image.newImageData(1120, 832)
+	local imageData = g.imageData
+
+	g.image = love.graphics.newImage(imageData)
+	local image = g.image
+
+	g.imageFFI = ffi.cast("uint32_t*", imageData:getPointer())
+	local imageFFI = g.imageFFI
+
 	g.canvas = love.graphics.newCanvas(width,height)
 	local canvas = g.canvas
+
+	g.vsync = false
 
 	vm.registerOpt("-display", function (arg, i)
 		local w,h = tonumber(arg[i+1]), tonumber(arg[i+2])
@@ -64,77 +77,114 @@ function gpu.new(vm, c)
 		return 3
 	end)
 
-	g.queue = ffi.new([[
-		struct {
-			int where;
-			int what;
-			int a;
-			int d;
-		}[1024*1024]
-	]])
-	local gqueue = g.queue
+	local subRectX1 = false
+	local subRectY1 = false
+	local subRectX2 = false
+	local subRectY2 = false
+	local m = false
 
-	local queued = 0
+	local function subRect(x,y,x1,y1)
+		if not subRectX1 then -- first thingy this frame
+			subRectX1 = x
+			subRectY1 = y
+			subRectX2 = x1
+			subRectY2 = y1
+			return
+		end
 
-	local function queue(s, offset, v, d)
+		if x < subRectX1 then
+			subRectX1 = x
+		end
+		if y < subRectY1 then
+			subRectY1 = y
+		end
+		if x1 > subRectX2 then
+			subRectX2 = x1
+		end
+		if y1 > subRectY2 then
+			subRectY2 = y1
+		end
+	end
+
+	local function action(s, offset, v, d)
 		if d == 0 then -- pixel
 			if s == 0 then
-				-- 1 modified pixel to queue
+				-- 1 modified pixel
+				local e1 = band(v, 0xFF)
 
-				local e = gqueue[queued]
+				framebuffer[offset] = e1
 
-				e.where = offset
-				e.what = v
-				e.d = 0
+				local bx = offset % bytesPerRow
+				local by = floor(offset / bytesPerRow)
 
-				queued = queued + 1
+				subRect(bx,by,bx+1,by+1)
 			elseif s == 1 then
-				-- 2 modified pixels to queue
+				-- 2 modified pixels
 
-				local e1,e2 = gqueue[queued],gqueue[queued + 1]
+				local e1 = band(v, 0xFF)
+				local e2 = rshift(band(v, 0xFF00), 8)
 
-				e1.where = offset
-				e2.where = offset + 1
+				framebuffer[offset] = e1
+				framebuffer[offset + 1] = e2
 
-				e1.what = band(v, 0xFF)
-				e2.what = rshift(v, 8)
+				local bx = offset % bytesPerRow
+				local by = floor(offset / bytesPerRow)
 
-				e1.d = 0
-				e2.d = 0
-
-				queued = queued + 2
+				subRect(bx,by,bx+2,by+1)
 			elseif s == 2 then
-				-- 4 modified pixels to queue
+				-- 4 modified pixels
 
-				local e1,e2,e3,e4 = gqueue[queued],gqueue[queued+1],gqueue[queued+2],gqueue[queued+3]
+				local e1 = band(v, 0xFF)
+				local e2 = rshift(band(v, 0xFF00), 8)
+				local e3 = rshift(band(v, 0xFF0000), 16)
+				local e4 = rshift(band(v, 0xFF000000), 24)
 
-				e1.where = offset
-				e2.where = offset + 1
-				e3.where = offset + 2
-				e4.where = offset + 3
+				framebuffer[offset] = e1
+				framebuffer[offset + 1] = e2
+				framebuffer[offset + 2] = e3
+				framebuffer[offset + 3] = e4
 
-				e1.what = band(v, 0xFF)
-				e2.what = rshift(band(v, 0xFF00), 8)
-				e3.what = rshift(band(v, 0xFF0000), 16)
-				e4.what = rshift(band(v, 0xFF000000), 24)
+				local bx = offset % bytesPerRow
+				local by = floor(offset / bytesPerRow)
 
-				e1.d = 0
-				e2.d = 0
-				e3.d = 0
-				e4.d = 0
-
-				queued = queued + 4
+				subRect(bx,by,bx+4,by+1)
 			end
-		else -- rectangle
-			local e = gqueue[queued]
+		elseif d == 1 then -- rectangle
+			local rw = rshift(s, 16)
+			local rh = band(s, 0xFFFF)
 
-			e.where = s
-			e.what = offset
-			e.a = v
-			e.d = 1
+			local rx = rshift(offset, 16)
+			local ry = band(offset, 0xFFFF)
 
-			queued = queued + 1
+			subRect(rx,ry,rx+rw,ry+rh)
+
+			for x = rx, rw+rx-1 do
+				for y = ry, rh+ry-1 do
+					framebuffer[y * width + x] = v
+				end
+			end
+		elseif d == 2 then -- scroll
+			subRect(0,0,width-1,height-1)
+
+			local rows = s
+			local color = offset
+
+			local mod = rows * width
+
+			for y = 0, height-rows-1 do
+				for x = 0, width-1 do
+					local b = y * width + x
+					framebuffer[b] = framebuffer[b + mod]
+				end
+			end
+
+			for y = height-rows, height-1 do
+				for x = 0, width-1 do
+					framebuffer[y * width + x] = color
+				end
+			end
 		end
+		m = true
 	end
 
 	local function gpuh(s, t, offset, v)
@@ -147,7 +197,7 @@ function gpu.new(vm, c)
 			if t == 0 then
 				return framebuffer[offset]
 			else
-				queue(s, offset, v, 0)
+				action(s, offset, v, 0)
 			end
 		elseif s == 1 then -- int
 			if t == 0 then
@@ -155,7 +205,7 @@ function gpu.new(vm, c)
 
 				return (u2 * 0x100) + u1
 			else
-				queue(s, offset, v, 0)
+				action(s, offset, v, 0)
 			end
 		elseif s == 2 then -- long
 			if t == 0 then
@@ -163,7 +213,7 @@ function gpu.new(vm, c)
 
 				return (u4 * 0x1000000) + (u3 * 0x10000) + (u2 * 0x100) + u1
 			else
-				queue(s, offset, v, 0)
+				action(s, offset, v, 0)
 			end
 		end
 	end
@@ -212,7 +262,14 @@ function gpu.new(vm, c)
 				-- port14 is x,y; both 16-bit
 				-- port15 is color
 
-				queue(port13, port14, port15, 1)
+				action(port13, port14, port15, 1)
+			elseif v == 3 then -- vsync enable
+				g.vsync = true
+			elseif v == 4 then -- scroll
+				-- port13 is rows
+				-- port14 is backfill color
+
+				action(port13, port14, port15, 2)
 			end
 		else
 			return 0
@@ -244,52 +301,25 @@ function gpu.new(vm, c)
 	end)
 
 	vm.registerCallback("draw", function (x,y,s)
-		if queued > 0 then
-			love.graphics.setCanvas(canvas)
+		if m then
+			imageData:mapPixel(function (x,y,r,g,b,a)
+				local e = palette[framebuffer[y * width + x]]
 
-			local nq = queued - 1
-			for i = 0, nq do
-				local e = gqueue[i]
+				return e.r/255,e.g/255,e.b/255,1
+			end, subRectX1, subRectY1, subRectX2 - subRectX1, subRectY2 - subRectY1)
 
-				if e.d == 0 then -- pixel
-					local bx = e.where % bytesPerRow
-					local by = floor(e.where / bytesPerRow)
+			m = false
+			subRectX1 = false
 
-					local w = e.what
-
-					framebuffer[e.where] = w
-
-					local g = palette[w]
-
-					love.graphics.setColor(g.r/255, g.g/255, g.b/255, 1)
-					love.graphics.points(bx,by)
-				elseif e.d == 1 then -- rectangle
-					local g = palette[e.a]
-
-					local rw = rshift(e.where, 16)
-					local rh = band(e.where, 0xFFFF)
-
-					local rx = rshift(e.what, 16)
-					local ry = band(e.what, 0xFFFF)
-
-					love.graphics.setColor(g.r/255, g.g/255, g.b/255, 1)
-					love.graphics.rectangle("fill", rx, ry, rw, rh)
-
-					for x = rx, rw+rx-1 do
-						for y = ry, rh+ry-1 do
-							framebuffer[y * width + x] = e.a
-						end
-					end
-				end
-			end
-
-			love.graphics.setCanvas()
-
-			queued = 0
+			image:replacePixels(imageData)
 		end
 
 		love.graphics.setColor(1,1,1,1)
-		love.graphics.draw(canvas, x, y, 0, s, s)
+		love.graphics.draw(image)
+
+		if g.vsync then
+			int(0x35)
+		end
 	end)
 
 	return g

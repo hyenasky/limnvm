@@ -8,9 +8,9 @@
 ;our IO is blocking, once its initiated, it spins until we receive interrupt 0x31 with
 ;proper details
 
-AHDBCmdPort === 0x18
-AHDBPortA === 0x19
-AHDBPortB === 0x1A
+AHDBCmdPort === 0x19
+AHDBPortA === 0x1A
+AHDBPortB === 0x1B
 
 AHDBCmdSelect === 0x1
 AHDBCmdRead === 0x2

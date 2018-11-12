@@ -8,28 +8,34 @@ ROM=./sys/ROM/Main.s
 ROMBIN=./bin/boot.bin
 ROMBUILD=./sys/ROM/build
 
+NVRAM=./bin/nvram
+
 VHD=./bin/hd0.img
 VNFS=./bin/vnixfs.img
 DISKTOOLS=./bin/disktools.img
 
 all:
-	make rom run
+	make bkern
+	$(EMU) -rom $(ROMBIN) -ahd $(VHD) -nvram $(NVRAM) -autorun "b0 0"
 
 rom:
 	printf '%s' `expr \`cat $(ROMBUILD)\` + 1` > $(ROMBUILD)
 	$(ASM) $(ROM) $(ROMBIN)
 
 run:
-	$(EMU) -rom $(ROMBIN) -ahd $(DISKTOOLS) -ahd $(VHD) -outs
+	$(EMU) -rom $(ROMBIN) -ahd $(DISKTOOLS) -ahd $(VHD) -outs -nvram $(NVRAM)
+
+bkern:
+	make kernel vnfs
 
 kernel:
-	$(DRAGONC) ./sys/vnix/Kernel.d ./tmp/vnix.s
+	$(DRAGONC) ./sys/vnix/Kernel/Kernel.d ./tmp/vnix.s
 	$(ASM) ./tmp/vnix.s ./tmp/vnix
 
 	./vfu ./bin/vnixfs.img w /vnix ./tmp/vnix
 
 vnfs:
-	dd if=$(VNFS) of=$(VHD) conv=notrunc seek=2 bs=4096
+	dd if=$(VNFS) of=$(VHD) conv=notrunc seek=2 bs=4096 count=512
 
 vboot:
 	$(DRAGONC) ./sys/vboot/BootSector.d ./tmp/VBootSector.s

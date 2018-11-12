@@ -1,10 +1,10 @@
 local keydev = {}
 
 -- implements a AISA keyboard
--- port 0x16: commands
+-- port 0x17: commands
 --  0: idle
 --  1: pop scancode from queue
--- port 0x17: data
+-- port 0x18: data
 
 -- raises interrupt 0x30 when a key is pressed
 
@@ -85,7 +85,7 @@ function keydev.new(vm, c)
 
 	local port17 = 0xFFFF
 
-	bus.addPort(0x16, function(s, t, v)
+	bus.addPort(0x17, function(s, t, v)
 		if s ~= 0 then
 			return 0
 		end
@@ -96,7 +96,6 @@ function keydev.new(vm, c)
 					port17 = kbd.kbp()
 				else
 					port17 = 0xFFFF
-					int(8) -- io error
 				end
 			elseif v == 2 then -- reset buffer
 				kbd.kbb = {}
@@ -106,7 +105,7 @@ function keydev.new(vm, c)
 		end
 	end)
 
-	bus.addPort(0x17, function (s,t,v)
+	bus.addPort(0x18, function (s,t,v)
 		if t == 1 then
 			port17 = v
 		else
@@ -129,12 +128,15 @@ function keydev.new(vm, c)
 		end
 	end)
 
-	local function stream(...)
-		t = {...}
-
-		for k,v in ipairs(t) do
+	local function stream(str)
+		for i = 1, #str do
 			int(0x30)
-			kbd.kba(layout.m[v])
+			local c = str:sub(i,i)
+			if c == "\n" then
+				kbd.kba(layout.m["return"])
+			else
+				kbd.kba(layout.m[str:sub(i,i)])
+			end
 		end
 	end
 

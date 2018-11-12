@@ -2,7 +2,7 @@
 GraphicsFBStart === 0xF4000000
 BusStart === 0xFFFC0000
 ResetVector === 0xFFFE0000
-
+NVRAM === 0xF2000000
 
 ;0x0 to 0xFFFFF should be untouched by client programs
 ;in order to expect Antecedent to still function correctly

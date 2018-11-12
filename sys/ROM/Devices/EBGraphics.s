@@ -1,4 +1,6 @@
-;driver for 640x480 8-bit color display
+;driver for variable resolution 8-bit color display
+
+;depends on routines from Blitter.s
 
 ;constants
 GraphicsPixelsPerByte === 1
@@ -11,10 +13,21 @@ GraphicsGPUPortC === 0x15
 
 GraphicsGPUInfo === 0x1
 GraphicsGPURectangle === 0x2
+GraphicsGPUVSync === 0x3
+GraphicsGPUScroll === 0x4
+
+GraphicsInt === 0x35
+
+GraphicsVSyncInterrupt:
+	iret
 
 GraphicsInit:
 	push r0
 	push r1
+
+	li r0, GraphicsInt
+	li r1, GraphicsVSyncInterrupt
+	call InterruptRegister
 
 	;request info from gpu
 	li r0, GraphicsGPUCmdPort
@@ -49,23 +62,21 @@ GraphicsInit:
 GraphicsBlitScreen:
 	push r1
 	push r2
+	push r3
+	push r4
 
-	li r1, GraphicsFBStart
-	lri.l r2, GraphicsFBEnd
+	mov r1, r0 ;from
+	li r2, GraphicsFBStart ;dest
+	lri.i r3, GraphicsWidth
+	lri.i r4, GraphicsHeight
+	lshi r4, r4, 16
+	ior r3, r3, r4 ;dim
+	li r4, 0 ;modulo
+	li r0, 1 ;COPY
+	call BlitterOperation
 
-.loop:
-	cmp r1, r2
-	bge .end
-
-	lrr.l r3, r0
-	srr.l r1, r3
-
-	addi r1, r1, 4
-	addi r0, r0, 4
-	b .loop
-
-.end:
-
+	pop r4
+	pop r3
 	pop r2
 	pop r1
 	ret
@@ -145,6 +156,24 @@ GraphicsFilledRectangle:
 ;r0 - rows
 ;r1 - fill
 GraphicsScrollScreen:
+	push r1
+	mov r1, r0
+	li r0, GraphicsGPUPortA
+	call BusWriteLong
+	pop r1
+
+	li r0, GraphicsGPUPortB
+	call BusWriteLong
+
+	li r0, GraphicsGPUCmdPort
+	li r1, GraphicsGPUScroll
+	call BusCommand
+
+	ret
+
+;r0 - rows
+;r1 - fill
+_SoftwareGraphicsScrollScreen:
 	;algo works like this:
 	;keep two counters:
 	;the first starts at row 0+r0, or byte r0*GraphicsBytesPerRow + GraphicsFBStart
