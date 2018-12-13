@@ -1,4 +1,4 @@
-.include "Includes.s"
+.include Includes.s
 
 ResetFault === 1
 
