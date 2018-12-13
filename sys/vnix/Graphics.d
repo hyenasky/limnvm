@@ -15,7 +15,7 @@ procedure GraphicsFillScreen (* color -- *)
 	GraphicsFramebuffer (* dest *)
 	color@ (* from *)
 	2 (* cmd *)
-	BlitterOperation
+	ACIBlitterOperation
 end
 
 procedure GraphicsCopyImage (* image x y w h -- *)
@@ -35,7 +35,7 @@ procedure GraphicsCopyImage (* image x y w h -- *)
 	GraphicsFramebuffer y@ GraphicsScreenWidth * x@ + + (* dest *)
 	image@ (* from *)
 	1 (* cmd *)
-	BlitterOperation
+	ACIBlitterOperation
 end
 
 procedure GraphicsCopyFromScreen (* buf x y w h -- *)
@@ -55,5 +55,5 @@ procedure GraphicsCopyFromScreen (* buf x y w h -- *)
 	buf@ (* dest *)
 	GraphicsFramebuffer y@ GraphicsScreenWidth * x@ + + (* from *)
 	1 (* cmd *)
-	BlitterOperation
+	ACIBlitterOperation
 end

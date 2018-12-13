@@ -1,7 +1,7 @@
 _STACK_PTR:
 	.dl 0
 
-;68 cells deep
+;128 cells deep
 _STACK:
 	.bytes 512 0
 

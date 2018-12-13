@@ -21,7 +21,7 @@ function serial.new(vm, c)
 	local iq = {}
 	local oq = {}
 
-	bus.addPort(0x10, function (s,t,v)
+	bus.addPort(0x10, function (e,t,v)
 		if t == 1 then
 			if v == 1 then
 				if stdo then
@@ -49,9 +49,9 @@ function serial.new(vm, c)
 		end
 	end)
 
-	function s.stream(s)
-		for i = 1, #s do
-			local c = s:sub(i,i)
+	function s.stream(e)
+		for i = 1, #e do
+			local c = e:sub(i,i)
 
 			iq[#iq + 1] = c
 		end
@@ -66,7 +66,7 @@ function serial.new(vm, c)
 	end
 
 	vm.registerOpt("-insf", function (arg, i)
-		s.stream(io.open(arg[i+1]):read("*a"))
+		s.stream(io.open(arg[i+1]):read("*l"))
 
 		return 2
 	end)

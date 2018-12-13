@@ -88,10 +88,17 @@ local iwords = {
 		out:a("cmpi r0, 0")
 		out:a("be "..out:syms(o))
 
+		out:wenter(o)
+
 		df.cblock(out, stream, "end")
+
+		out:wexit()
 
 		out:a("b "..out:syms(expr))
 		out:a(out:syms(o)..":")
+	end,
+	["break"] = function (out, stream)
+		out:a("b "..out:syms(out.wc[#out.wc]))
 	end,
 	["if"] = function (out, stream)
 		if stream:extract()[1] ~= "(" then
@@ -162,8 +169,12 @@ local iwords = {
 			end
 
 			if t[2] ~= "number" then
-				print("unexpected "..t[2].." inside struct, wanted number")
-				break
+				if (t[2] == "tag") and out.const[t[1]] then
+					t[1] = out.const[t[1]]
+				else
+					print("unexpected "..t[2].." inside struct, wanted number or const")
+					break
+				end
 			end
 
 			local n = stream:extract()
@@ -191,56 +202,86 @@ local iwords = {
 
 		out.var[name[1]] = name[1]
 
-		out:d(name[1]..":")
-
 		local t = stream:extract()
+
+		local tca = ""
+
+		local function tcad(e)
+			tca = tca .. e .. "\n"
+		end
+
+		tcad(name[1]..":")
 
 		while t do
 			if t[1] == "endtable" then
 				break
 			end
 
-			if (t[2] ~= "number") and (t[2] ~= "string") then
-				print("unexpected "..t[2].." in table")
-			end 
+			if t[2] == "number" then
+				tcad("	.dl "..tostring(t[1]))
+			elseif t[2] == "tag" then
+				if t[1] == "pointerof" then
+					local fname = stream:extract()
 
-			-- TODO
+					if fname[2] ~= "tag" then
+						print("unexpected "..fname[2].." at pointerof")
+					end
+
+					p = fname[1]
+
+					tcad("	.dl "..tostring(p))
+				else
+					tcad("	.dl "..tostring(out.const[t[1]]))
+				end
+			elseif t[2] == "string" then
+				local string = t[1]
+
+				local s = out:newsym()
+				out.ds = out.ds .. "	.ds "
+				for i = 1, #string do
+					local c = string:sub(i,i)
+					if c == "\n" then
+						out.ds = out.ds .. "\n"
+						out:d("	.db 0xA")
+						out.ds = out.ds .. "	.ds "
+					else
+						out.ds = out.ds .. c
+					end
+				end
+				out:d("")
+				out:d("	.db 0x0")
+
+				tcad("	.dl "..out:syms(s))
+
+				out.oc = out.oc + 1
+			else
+				print("unexpected "..t[2].." in table")
+			end
 
 			t = stream:extract()
 		end
+
+		out:d(tca)
 	end,
 	["auto"] = function (out, stream)
 		local name = stream:extract()
 
 		if name[2] ~= "tag" then
-			print("unexpected "..name[2].." at const")
+			print("unexpected "..name[2].." at auto")
 		end
 
 		out:newauto(name[1])
-	end,
-	["set"] = function (out, stream) -- ( size area -- )
-		out:a("call _POP")
-		out:a("mov r1, r0")
-		out:a("call _POP")
-		-- r1: ptr
-		-- r0: size
-
-		out:a()
 	end,
 	["pointerof"] = function (out, stream)
 		local name = stream:extract()
 
 		if name[2] ~= "tag" then
-			print("unexpected "..name[2].." at const")
+			print("unexpected "..name[2].." at pointerof")
 		end
 
 		local p = 0
 
-		if out.var[name[1]] then
-			p = name[1]
-		else
-			p = name[1]
-		end
+		p = name[1]
 
 		out:a("li r0, "..tostring(p))
 		out:a("call _PUSH")
@@ -315,6 +356,12 @@ local iwords = {
 		out:a("not r0, r0")
 		out:a("call _PUSH")
 	end,
+	["~~"] = function (out, stream)
+		out:a("call _POP")
+		out:a("not r0, r0")
+		out:a("andi r0, r0, 1")
+		out:a("call _PUSH")
+	end,
 	["|"] = function (out, stream)
 		out:a("call _POP")
 		out:a("mov r1, r0")
@@ -335,6 +382,14 @@ local iwords = {
 		out:a("mov r1, r0")
 		out:a("call _POP")
 		out:a("and r0, r0, r1")
+		out:a("call _PUSH")
+	end,
+	["&&"] = function (out, stream)
+		out:a("call _POP")
+		out:a("mov r1, r0")
+		out:a("call _POP")
+		out:a("and r0, r0, r1")
+		out:a("andi r0, r0, 1")
 		out:a("call _PUSH")
 	end,
 	[">>"] = function (out, stream)
@@ -401,6 +456,20 @@ local iwords = {
 		out:a("mov r1, r0")
 		out:a("call _POP")
 		out:a("mod r0, r0, r1")
+		out:a("call _PUSH")
+	end,
+	["["] = function (out, stream)
+		df.cblock(out, stream, "]")
+
+		local tab = stream:extract()
+
+		if tab[2] ~= "tag" then
+			print("unexpected "..tab[2].." at [")
+		end
+
+		out:a("call _POP")
+		out:a("muli r0, r0, 4")
+		out:a("addi r0, r0, "..tab[1])
 		out:a("call _PUSH")
 	end,
 	["("] = function (out, stream)
@@ -611,11 +680,21 @@ function df.c(src, path)
 	out.auto = {}
 	out.auto._LAU = 5
 
+	out.wc = {}
+
 	out.rauto = {}
 
 	local automax = 30
 
 	out.path = path
+
+	function out:wenter(o)
+		out.wc[#out.wc + 1] = o
+	end
+
+	function out.wexit(o)
+		table.remove(out.wc,#out.wc)
+	end
 
 	function out:contextEnter()
 		for k,v in ipairs(out.rauto) do
@@ -689,6 +768,8 @@ function df.c(src, path)
 		["#"] = true,
 		["("] = true,
 		[")"] = true,
+		["["] = true,
+		["]"] = true,
 	}
 
 	local whitespace = {

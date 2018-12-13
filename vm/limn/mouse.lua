@@ -59,6 +59,7 @@ function mouse.new(vm, c)
 			if mfocused then
 				mfocused = false
 				love.mouse.setRelativeMode(false)
+				love.window.setTitle("limnvm")
 			end
 		end
 	end)
@@ -66,6 +67,7 @@ function mouse.new(vm, c)
 	vm.registerCallback("mousepressed", function (x, y, button)
 		if not mfocused then
 			mfocused = true
+			love.window.setTitle("limnvm - press right windows key to uncapture mouse")
 			love.mouse.setRelativeMode(true)
 			return
 		end

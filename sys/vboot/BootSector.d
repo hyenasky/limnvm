@@ -66,7 +66,7 @@ procedure Main (* ciptr bootdev -- *)
 
 	"==== Bootloader ====\n" PutString
 
-	"bootdev? default:" PutString
+	"Bootdev? Default:" PutString
 	BootDevice@ PutInteger
 	CR
 
@@ -76,7 +76,7 @@ procedure Main (* ciptr bootdev -- *)
 		PromptLine StringToInteger BootDevice!
 	end
 
-	"boot0 on blk" PutString
+	"Boot0 on blockdev" PutString
 	BootDevice@ PutInteger
 	CR
 
@@ -86,7 +86,7 @@ procedure Main (* ciptr bootdev -- *)
 	"Disk Info:\n" PutString
 
 	if (VDBCache VDB_Magic + @ 0x4E4D494C ~=) (* check for signature *)
-		"Invalid volume descriptor.\n" Error
+		"at the disc.\n" Error
 		return
 	end
 

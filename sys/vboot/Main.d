@@ -70,7 +70,7 @@ procedure Main (* ciptr bootdev bootpartition partitiontable -- *)
 		call _POP
 		mov r1, r0
 		call _POP
-		call 0x200004
+		b 0x200004
 	"
 end
 

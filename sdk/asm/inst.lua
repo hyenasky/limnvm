@@ -121,7 +121,9 @@ local inst = {
 
 -- extensions
 
-	["bswap"] = {3, 0x49, {1, 1}}
+	["bswap"] = {3, 0x49, {1, 1}},
+	["httl"] = {1, 0x4A, {}},
+	["htts"] = {1, 0x4B, {}},
 }
 
 local regs = {
@@ -162,7 +164,7 @@ local regs = {
 	["sp"]  = 33,
 	["rs"]  = 34,
 	["ivt"] = 35,
-	["pdt"] = 36,
+	["htta"] = 36,
 }
 
 return {inst, regs}

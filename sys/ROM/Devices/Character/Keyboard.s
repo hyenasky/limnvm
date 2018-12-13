@@ -24,11 +24,18 @@ KeyboardInit:
 	li r1, KeyboardCmdReset
 	call BusCommand
 
+	li r0, CharDevNull
+	li r1, KeyboardRead
+	call CharDevRegister
+
 	ret
 
 ;returns:
 ;r0 - scancode
 KeyboardPopScan:
+	push rs
+	bclri rs, rs, 1
+
 	push r1
 	li r0, KeyboardCmdPort
 	li r1, KeyboardCmdPop
@@ -38,6 +45,8 @@ KeyboardPopScan:
 	li r0, KeyboardDataPort
 	call BusReadInt
 
+	pop rs
+
 	ret
 
 ;r0 - char
@@ -46,7 +55,8 @@ KeyboardPopScan:
 KeyboardPutBuffer:
 	push r1
 
-	bclri rs, rs, 1 ;disable interrupts
+	push rs
+	bclri rs, rs, 1
 
 	lri.b r1, KeyboardWritePointer
 	addi r1, r1, KeyboardBuffer
@@ -66,7 +76,7 @@ KeyboardPutBuffer:
 
 .out:
 
-	bseti rs, rs, 1 ;enable interrupts
+	pop rs
 
 	pop r1
 	ret
@@ -77,7 +87,8 @@ KeyboardPopBuffer:
 	push r1
 	push r2
 
-	bclri rs, rs, 1 ;disable interrupts
+	push rs
+	bclri rs, rs, 1
 
 	lri.b r1, KeyboardWritePointer
 	lri.b r2, KeyboardReadPointer
@@ -110,7 +121,7 @@ KeyboardPopBuffer:
 
 .out:
 
-	bseti rs, rs, r1 ;enable interrupts
+	pop rs
 
 	pop r2
 	pop r1
@@ -163,9 +174,10 @@ KeyboardInterrupt:
 	lrr.b r0, r0 ;get char
 
 	cmpi r0, "c" ;reset if ctrl-C
-	be Reset
+	bne .char
 
-	b .char
+	li r0, 0
+	b Reset
 
 .special:
 	cmpi r0, 50 ;return
@@ -204,9 +216,6 @@ KeyboardRead:
 	call KeyboardPopBuffer
 	ret
 
-KeyboardWrite:
-	ret
-
 ; keyboard layout maps
 
 KeyboardLayout:
@@ -239,11 +248,11 @@ KeyboardLayout:
 	.db ","
 
 KeyboardLayoutCtrl:
-	.db "a"
-	.db "b", "c", "d"
-	.db "e", "f", "g"
-	.db "h", "i", "j"
-	.db "k", "l", "m"
+	.db "i"
+	.db "a", "c", "m"
+	.db "s", "u", "p"
+	.db "e", "r", "g"
+	.db "a", "y", "m"
 	.db "n", "o", "p"
 	.db "q", "r", "s"
 	.db "t", "u", "v"

@@ -1,11 +1,32 @@
 Monitor:
-	lri.b r0, NVRAMLocAutorun
+	li r0, himsg
+	call PutString
+
+	lri.b r0, NVRAM_AutorunBuffer
 	cmpi r0, 0
 	be .cont
 
 	;autorun
 
-	li r0, NVRAMLocAutorun
+	li r0, MonitorStringRWC
+	call PutString
+	li r0, NVRAM_AutorunBuffer
+	call PutString
+	li r0, 0xA
+	call StdPutChar
+	li r0, 0xA
+	call StdPutChar
+
+	li r0, MonitorBuffer
+	call StringZero
+
+	li r0, MonitorBuffer
+	li r1, NVRAM_AutorunBuffer
+	call StringCopy
+
+	sii.b NVRAM_AutorunBuffer, 0
+
+	li r0, MonitorBuffer
 	call MonitorDoLine
 
 .cont:
@@ -69,14 +90,91 @@ MonitorDoLine:
 
 	cmpi r1, "x"
 	be .cmdx
-	
+
+	cmpi r1, "s"
+	be .cmds
+
+	cmpi r1, "g"
+	be .cmdg
+
+	cmpi r1, "t"
+	be .cmdt
+
 	b .notcmd
+
+.cmdt:
+	push r0
+	li r0, MonitorStringT
+	call PutString
+	pop r0
+	b .out
+
+.cmdg:
+	push r0
+	li r0, MonitorStringG
+	call PutString
+	pop r0
+	b .out
+
+.cmds:
+	push r0
+	li r0, MonitorWordBuffer
+	call StringZero
+	pop r0
+
+	push r2
+	addi r0, r0, 1
+	li r1, MonitorWordBuffer
+	li r2, 0x20 ;space
+	call StringTokenize
+	pop r2
+
+	push r0
+	li r0, MonitorWordBuffer
+	call StringToInteger
+
+	mov r1, r0
+
+	li r0, MonitorWordBuffer
+	call StringZero
+	pop r0
+
+	push r2
+	push r1
+	li r1, MonitorWordBuffer
+	li r2, 0x20 ;space
+	call StringTokenize
+	pop r1
+	pop r2
+
+	li r0, MonitorWordBuffer
+	call StringToInteger
+
+	xch r0, r1
+
+	srr.l r0, r1
+
+	b .out
 
 .cmdx:
 	push r0
-	li r0, 0
+	li r0, MonitorWordBuffer
+	call StringZero
+	pop r0
+
+	push r2
+	addi r0, r0, 1
+	li r1, MonitorWordBuffer
+	li r2, 0x20 ;space
+	call StringTokenize
+	pop r2
+
+	li r0, MonitorWordBuffer
+	call StringToInteger
+
 	call GraphicsBlitScreen
 	pop r0
+
 	b .out
 
 .cmdb:
@@ -346,6 +444,8 @@ MonitorHelpString:
 	.ds 'd' - print devices
 	.db 0xA
 	.ds 'z' - colors
+	.db 0xA
+	.ds 's <addr> <value>' - write long to addr
 	.db 0xA, 0x0
 
 MonitorOString:
@@ -385,6 +485,35 @@ MonitorPString3:
 MonitorPString4:
 	.ds  bytes
 	.db 0x0
+
+MonitorStringRWC:
+	.ds Reset with command 
+	.db 0x0
+
+MonitorStringG:
+	.ds he really does
+	.db 0xA, 0x0
+
+MonitorStringT:
+	.ds FUCKIN RADICAL IS WHAT
+	.db 0xA, 0x0
+
+himsg:
+	.db 0x11, 0xA
+	.ds 	Welcome to ANTECEDENT
+	.db 0xA
+	.db 0xA
+	.ds 	Version 1.1 (build 
+	.ds$ BuildNum
+	.ds )
+	.db 0xA
+	.ds 	Built on 
+	.ds$ __DATE
+	.db 0xA
+	.ds 	Boot firmware for AISAv2 Lemon
+	.db 0xA
+	.ds 	Written by Will
+	.db 0xA, 0xA, 0x0
 
 
 

@@ -62,6 +62,9 @@ BlitterOperation:
 
 	push r0
 
+	push rs
+	bclri rs, rs, 1
+
 	li r0, BlitterPortA
 	call BusWriteLong
 
@@ -76,6 +79,8 @@ BlitterOperation:
 	li r0, BlitterPortD
 	mov r1, r4
 	call BusWriteLong
+
+	pop rs
 
 	pop r0
 	mov r1, r0

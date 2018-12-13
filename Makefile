@@ -16,7 +16,7 @@ DISKTOOLS=./bin/disktools.img
 
 all:
 	make bkern
-	$(EMU) -rom $(ROMBIN) -ahd $(VHD) -nvram $(NVRAM) -autorun "b0 0"
+	$(EMU) -outs -rom $(ROMBIN) -ahd $(VHD) -nvram $(NVRAM) -nvram,autorun "b0 0"
 
 rom:
 	printf '%s' `expr \`cat $(ROMBUILD)\` + 1` > $(ROMBUILD)

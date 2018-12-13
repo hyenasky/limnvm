@@ -1,4 +1,4 @@
-.include Includes.s
+.include "Includes.s"
 
 ResetFault === 1
 
@@ -12,9 +12,8 @@ Reset:
 	sir.b ResetReason, r0
 
 	call InterruptInit
-	call CharDevInit
 	call GraphicsInit
-	call ConsoleInit
+	call CharDevInit
 	call BlockInit
 
 	li r0, 0x11
@@ -30,18 +29,8 @@ Reset:
 	call PutString
 
 .normal:
-	li r0, 0xA
-	call StdPutChar
-	li r0, 0xA
-	call StdPutChar
-
-	call MmuInit
-
 	call NVRAMInit
-
-	li r0, himsg
-	call PutString
-
+	call MmuInit
 	call AHDBInit
 	call BlitterInit
 
@@ -50,23 +39,6 @@ Reset:
 	b Halt
 
 BuildNum === #build
-
-himsg:
-	.db 0xA
-	.ds 	Welcome to ANTECEDENT
-	.db 0xA
-	.db 0xA
-	.ds 	Version 1.1 (build 
-	.ds$ BuildNum
-	.ds )
-	.db 0xA
-	.ds 	Built on 
-	.ds$ __DATE
-	.db 0xA
-	.ds 	Boot firmware for AISAv2 Lemon
-	.db 0xA
-	.ds 	Written by Will
-	.db 0xA, 0xA, 0x0
 
 Halt:
 	bclri rs, rs, 1 ;disable interrupts

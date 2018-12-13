@@ -45,22 +45,22 @@ function nvram.new(vm, c)
 			elseif s == 2 then
 				local u1, u2, u3, u4 = (math.modf(v/16777216))%256, (math.modf(v/65536))%256, (math.modf(v/256))%256, v%256
 
-				mem[b] = u4
-				mem[b+1] = u3
-				mem[b+2] = u2
-				mem[b+3] = u1 -- little endian
+				mem[offset] = u4
+				mem[offset+1] = u3
+				mem[offset+2] = u2
+				mem[offset+3] = u1 -- little endian
 
-				sm[b] = u4
-				sm[b+1] = u3
-				sm[b+2] = u2
-				sm[b+3] = u1 -- little endian
+				sm[offset] = u4
+				sm[offset+1] = u3
+				sm[offset+2] = u2
+				sm[offset+3] = u1 -- little endian
 			end
 		end
 	end)
 
 	nr.nvramfile = false
 
-	vm.registerOpt("-autorun", function (arg, i)
+	vm.registerOpt("-nvram,autorun", function (arg, i)
 		local ar = arg[i + 1]
 
 		for i = 1, #ar do
@@ -72,6 +72,24 @@ function nvram.new(vm, c)
 
 		return 2
 	end)
+
+	vm.registerOpt("-nvram,stdin", function (arg, i)
+		local ar = arg[i + 1]
+
+		mem[132] = tonumber(ar)
+
+		return 2
+	end)
+
+	vm.registerOpt("-nvram,stdout", function (arg, i)
+		local ar = arg[i + 1]
+
+		mem[133] = tonumber(ar)
+
+		return 2
+	end)
+
+	vm.registerOpt("-nvram,")
 
 	vm.registerOpt("-nvram", function (arg, i)
 		nr.nvramfile = arg[i + 1]

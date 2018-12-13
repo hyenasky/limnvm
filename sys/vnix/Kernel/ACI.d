@@ -2,6 +2,26 @@ var CIPtr 0
 
 asm "
 
+SaveFirmwareInterrupts:
+	sir.l AnteIVT, ivt
+	ret
+
+RestoreFirmwareInterrupts:
+	lri.l ivt, AnteIVT
+	ret
+
+AnteIVT:
+	.dl 0
+
+ReturnToFirmware:
+	call RestoreFirmwareInterrupts
+
+	lri.l sp, AnteSP
+	ret
+
+AnteSP:
+	.dl 0
+
 ;r30 - call num
 _CIC_Call:
 	push r29
@@ -39,6 +59,7 @@ _CIC_Reset === 18
 _CIC_InterruptRegister === 19
 _CIC_StringCompare === 20
 _CIC_BlitterOperation === 21
+_CIC_GetMem === 22
 
 ; string --
 ACIPutString:
@@ -82,8 +103,6 @@ ACIStdPutChar:
 ; -- char
 ACIStdGetChar:
 	push r30
-
-	call _POP
 
 	li r30, _CIC_StdGetChar
 	call _CIC_Call
@@ -380,6 +399,18 @@ ACIBlitterOperation:
 
 	li r30, _CIC_BlitterOperation
 	call _CIC_Call
+
+	pop r30
+	ret
+
+; -- mem
+ACIGetMem:
+	push r30
+
+	li r30, _CIC_GetMem
+	call _CIC_Call
+
+	call _PUSH
 
 	pop r30
 	ret

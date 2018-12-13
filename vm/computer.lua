@@ -17,13 +17,13 @@ function computer.new(vm, memsize)
 
 	-- chipset
 	c.mmu = require("limn/mmu").new(vm, c, memsize)
-	c.cpu = require("limn/cpu").new(vm, c)
-	c.bus = require("limn/bus").new(vm, c)
+	c.cpu = require("limn/limn").new(vm, c)
+	c.bus = require("limn/citron").new(vm, c)
 
 	-- devices
 	c.nvram = require("limn/nvram").new(vm, c)
 	c.rom = require("limn/rom").new(vm, c)
-	c.gpu = require("limn/8bitgpu").new(vm, c)
+	c.gpu = require("limn/kinnow").new(vm, c)
 	c.serial = require("limn/serial").new(vm, c)
 	c.keyboard = require("limn/keyboard").new(vm, c)
 	c.ahdb = require("limn/ahdb").new(vm, c)

@@ -25,6 +25,8 @@ function mmu.new(vm, c, memsize)
 	m.physend = physstart + memsize
 	local physend = m.physend
 
+	m.translating = false
+
 	--areas are 128kb pages of translated address space that
 	--call back to a handler when accessed.
 	--they're a bit of a bottleneck. there's probably
@@ -62,27 +64,6 @@ function mmu.new(vm, c, memsize)
 		areah[e] = nil
 	end
 	local unmapArea = m.unmapArea
-
-	-- blitter acceleration hack
-	function m.copyRow(s1,sz1, s2,sz2)
-		local m = areas[rshift(s1, 17)]
-
-		if m ~= 0 then -- mapped
-			local e = areah[m](0, 0, band(ptr, 0x1FFFF))
-
-			return areah[m](0, 0, band(ptr, 0x1FFFF))
-		end
-
-		-- no match. physmem it is
-
-		if (physstart <= ptr) and (physend >= ptr) then
-			local e = physmem[ptr - physstart]
-
-			return physmem[ptr - physstart]
-		end
-
-		return 0
-	end
 
 	--translated address space functions:
 	--post-paging translation addresses
@@ -232,31 +213,20 @@ function mmu.new(vm, c, memsize)
 	end
 	local TstoreLong = m.TstoreLong
 
-	--this is where paging translation etc will go
-	--for now, just 1:1 it
-
-	m.fetchByte = TfetchByte
-	local fetchByte = m.fetchByte
-
-	m.fetchInt = TfetchInt
-	local fetchInt = m.fetchInt
-
-	m.fetchLong = TfetchLong
-	local fetchLong = m.fetchLong
-
-	m.storeByte = TstoreByte
-	local storeByte = m.storeByte
-
-	m.storeInt = TstoreInt
-	local storeInt = m.storeInt
-
-	m.storeLong = TstoreLong
-	local storeLong = m.storeLong
-
 	-- mmu registers
 
 	m.registers = ffi.new("uint32_t[32]")
 	local registers = m.registers
+
+	--[[
+
+	0: RAM size
+	1: base
+	2: bounds
+	3: page table
+	4: faulting address
+
+	]]
 
 	registers[0] = memsize
 
@@ -279,6 +249,98 @@ function mmu.new(vm, c, memsize)
 			registers[offset/4] = v
 		end
 	end)
+
+	--this is where paging translation etc will go
+
+	function m.fetchByte(ptr)
+		if not m.translating then return TfetchByte(ptr) end
+
+		local bptr = ptr + registers[1]
+		if bptr >= registers[2] then
+			registers[4] = bptr
+			mmu.fault(7)
+		end
+
+		return TfetchByte(bptr)
+	end
+	local fetchByte = m.fetchByte
+
+	function m.fetchInt(ptr)
+		if not m.translating then return TfetchInt(ptr) end
+
+		local bptr = ptr + registers[1]
+		if bptr+1 >= registers[2] then
+			registers[4] = bptr
+			mmu.fault(7)
+		end
+
+		return TfetchInt(bptr)
+	end
+	local fetchInt = m.fetchInt
+
+	function m.fetchLong(ptr)
+		if not m.translating then return TfetchLong(ptr) end
+
+		local bptr = ptr + registers[1]
+		if bptr+3 >= registers[2] then
+			registers[4] = bptr
+			mmu.fault(7)
+		end
+
+		return TfetchLong(bptr)
+	end
+	local fetchLong = m.fetchLong
+
+
+	function m.storeByte(ptr, v)
+		if not m.translating then return TstoreByte(ptr, v) end
+
+		local bptr = ptr + registers[1]
+		if bptr >= registers[2] then
+			registers[4] = bptr
+			mmu.fault(7)
+		end
+
+		return TstoreByte(bptr, v)
+	end
+	local storeByte = m.storeByte
+
+	function m.storeInt(ptr, v)
+		if not m.translating then return TstoreInt(ptr, v) end
+
+		local bptr = ptr + registers[1]
+		if bptr+1 >= registers[2] then
+			registers[4] = bptr
+			mmu.fault(7)
+		end
+
+		return TstoreInt(bptr, v)
+	end
+	local storeInt = m.storeInt
+
+	function m.storeLong(ptr, v)
+		if not m.translating then return TstoreLong(ptr, v) end
+
+		local bptr = ptr + registers[1]
+		if bptr+3 >= registers[2] then
+			registers[4] = bptr
+			mmu.fault(7)
+		end
+
+		return TstoreLong(bptr, v)
+	end
+	local storeLong = m.storeLong
+
+	function m.translate(addr)
+		if not m.translating then return addr end
+
+		local bptr = addr + registers[1]
+		if bptr >= registers[2] then
+			return false
+		end
+
+		return bptr
+	end
 
 	return m
 end

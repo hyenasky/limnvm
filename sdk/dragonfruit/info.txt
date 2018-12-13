@@ -37,10 +37,10 @@ object sn_Element1 + @
 == tables ==
 
 table tn
-	"Hi!",
-	2,
-	6,
-	0x53325,
+	"Hi!"
+	2
+	6
+	0x53325
 	4
 endtable
 

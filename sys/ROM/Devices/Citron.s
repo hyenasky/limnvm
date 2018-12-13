@@ -3,6 +3,9 @@ BusBytesPerPort === 4
 ;r0 - port
 ;r1 - command
 BusCommand:
+	push rs
+	bclri rs, rs, 1
+
 	muli r0, r0, 4
 	addi r0, r0, BusStart
 
@@ -18,6 +21,7 @@ BusCommand:
 
 .done:
 	pop r2
+	pop rs
 
 	ret
 

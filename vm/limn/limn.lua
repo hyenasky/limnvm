@@ -25,6 +25,16 @@ function cpu.new(vm, c)
 	local storeInt = mmu.storeInt
 	local storeLong = mmu.storeLong
 
+	local TfetchByte = mmu.TfetchByte
+	local TfetchInt = mmu.TfetchInt
+	local TfetchLong = mmu.TfetchLong
+
+	local TstoreByte = mmu.TstoreByte
+	local TstoreInt = mmu.TstoreInt
+	local TstoreLong = mmu.TstoreLong
+
+	local translate = mmu.translate
+
 	function p.int(num) -- raise interrupt
 		local siq = #intq
 
@@ -57,6 +67,12 @@ function cpu.new(vm, c)
 	end
 	local setFlag = p.setFlag
 
+	function p.fillState(v)
+		reg[34] = v
+		mmu.translating = (getBit(v, 2) == 1)
+	end
+	local fillState = p.fillState
+
 	function p.getState(n)
 		return getBit(reg[34], n) or 0
 	end
@@ -82,6 +98,11 @@ function cpu.new(vm, c)
 			reg[n] = v
 		else -- kernel
 			if kernelMode() then -- in kernel mode
+				if (n == 34) then
+					fillState(v)
+					return
+				end
+
 				reg[n] = v
 			else -- privileges too low
 				fault(3) -- raise privilege violation fault
@@ -115,13 +136,13 @@ function cpu.new(vm, c)
 	-- push long to stack
 	function p.push(v)
 		reg[33] = reg[33] - 4
-		storeLong(reg[33], v)
+		TstoreLong(reg[33], v)
 	end
 	local push = p.push
 
 	-- pop long from stack
 	function p.pop()
-		local v = fetchLong(reg[33])
+		local v = TfetchLong(reg[33])
 		reg[33] = reg[33] + 4
 		return v
 	end
@@ -274,57 +295,57 @@ function cpu.new(vm, c)
 		-- control flow primitives
 
 		[0x1B] = function (pc) -- [b]
-			return fetchLong(pc + 1)
+			return fetchLong(pc + 1), true
 		end,
 		[0x1C] = function (pc) -- [br]
-			return pgReg(fetchByte(pc + 1))
+			return pgReg(fetchByte(pc + 1)), true
 		end,
 		[0x1D] = function (pc) -- [be]
 			if getFlag(0) == 1 then
-				return fetchLong(pc + 1)
+				return fetchLong(pc + 1), true
 			end
 
-			return pc + 5
+			return pc + 5, true
 		end,
 		[0x1E] = function (pc) -- [bne]
 			if getFlag(0) == 0 then
-				return fetchLong(pc + 1)
+				return fetchLong(pc + 1), true
 			end
 
-			return pc + 5
+			return pc + 5, true
 		end,
 		[0x1F] = function (pc) -- [bg]
 			if getFlag(1) == 1 then
-				return fetchLong(pc + 1)
+				return fetchLong(pc + 1), true
 			end
 
-			return pc + 5
+			return pc + 5, true
 		end,
 		[0x20] = function (pc) -- [bl]
 			if (getFlag(1) == 0) and (getFlag(0) == 0) then
-				return fetchLong(pc + 1)
+				return fetchLong(pc + 1), true
 			end
 
-			return pc + 5
+			return pc + 5, true
 		end,
 		[0x21] = function (pc) -- [bge]
 			if (getFlag(0) == 1) or (getFlag(1) == 1) then
-				return fetchLong(pc + 1)
+				return fetchLong(pc + 1), true
 			end
 
-			return pc + 5
+			return pc + 5, true
 		end,
 		[0x22] = function (pc) -- [ble]
 			if (getFlag(0) == 1) or (getFlag(1) == 0) then
-				return fetchLong(pc + 1)
+				return fetchLong(pc + 1), true
 			end
 
-			return pc + 5
+			return pc + 5, true
 		end,
 		[0x23] = function (pc) -- [call]
 			push(pc + 5)
 
-			return fetchLong(pc + 1)
+			return fetchLong(pc + 1), true
 		end,
 		[0x24] = function (pc) -- [ret]
 			return pop()
@@ -582,7 +603,7 @@ function cpu.new(vm, c)
 		end,
 		[0x48] = function (pc) -- [iret]
 			if kernelMode() then
-				setState(0, pop())
+				reg[34] = pop()
 				reg[0] = pop()
 				return pop()
 			else
@@ -607,6 +628,50 @@ function cpu.new(vm, c)
 			psReg(fetchByte(pc + 1), swapped)
 
 			return pc + 3
+		end,
+
+		[0x4A] = function (pc) -- [httl]
+			if kernelMode() then
+				local htta = reg[36]
+
+				print(string.format("%X", htta))
+
+				for i = 0, 35 do
+					if i == 34 then
+						fillState(TfetchLong(htta+(34*4)))
+					else
+						reg[i] = TfetchLong(htta+(i*4))
+					end
+				end
+
+				for i = 0, 36 do
+					print(string.format("%d = %X", i, reg[i]))
+				end
+
+				return reg[32]
+			else
+				fault(3)
+			end
+
+			return pc + 1
+		end,
+
+		[0x4B] = function (pc) -- [htts]
+			if kernelMode() then
+				local htta = reg[36]
+
+				for i = 0, 35 do
+					TstoreLong(htta+(i*4), reg[i])
+				end
+
+				TstoreLong(htta+(34*4), pop())
+				TstoreLong(htta+(0*4), pop())
+				TstoreLong(htta+(32*4), pop())
+			else
+				fault(3)
+			end
+
+			return pc + 1
 		end,
 
 		-- temporary for vm debug purposes
@@ -638,27 +703,35 @@ function cpu.new(vm, c)
 
 				local n = intq[1] -- get num
 
-				local v = fetchLong(reg[35] + n*4) -- get vector
+				local v = TfetchLong(reg[35] + n*4) -- get vector
 
 				if v ~= 0 then
 					push(reg[32])
 					push(reg[0])
-					push(getState(0))
+					push(reg[34])
 
 					reg[32] = v
 					reg[0] = n
-					setState(0, 0)
+					setState(0, 0) -- kernel mode
+					setState(1, 0) -- disable mmu
 					table.remove(intq, 1)
 				end
 			end
 
 			local pc = reg[32]
 
-			local e = optable[fetchByte(pc)]
+			local e = optable[TfetchByte(pc)]
 			if e then
-				reg[32] = e(pc)
+				local np, tr = e(pc)
+
+				if not tr then
+					reg[32] = np
+				else
+					reg[32] = translate(np)
+				end
 			else
 				reg[32] = pc + 1
+				print(string.format("ackack %X", reg[32]))
 				fault(1) -- invalid opcode
 			end
 		end
@@ -769,13 +842,13 @@ raise an interrupt.]], 0, 10)
 
 	statebox.ly = 20
 
-	for i = 20, 35 do
+	for i = 20, 36 do
 		statebox.rx[i] = statebox:addTextInput(110, statebox.ly, 100, 10)
 		statebox.ly = statebox.ly + 10
 	end
 
 	statebox:setUpdate(function (dt)
-		for i = 0, 35 do
+		for i = 0, 36 do
 			if i ~= statebox.areg then
 				statebox.ti[statebox.rx[i]][5] = string.format("0x%X", reg[i])
 			end

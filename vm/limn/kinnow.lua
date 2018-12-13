@@ -1,4 +1,4 @@
--- implements a simple 8-bit color, 1120x832 display, with simple 2d acceleration
+-- implements a simple 8-bit color, 1120x832 framebuffer, with simple 2d acceleration
 
 local lshift, rshift, tohex, arshift, band, bxor, bor, bnot, bror, brol =
 	lshift, rshift, tohex, arshift, band, bxor, bor, bnot, bror, brol
@@ -7,7 +7,7 @@ local floor = math.floor
 
 local gpu = {}
 
-local palette = require("limn/8bitgpu_palette")
+local palette = require("limn/kinnow_palette")
 
 -- port 0x12: commands
 --  0: idle
@@ -22,14 +22,16 @@ local palette = require("limn/8bitgpu_palette")
 function gpu.new(vm, c)
 	local g = {}
 
+	local log = vm.log.log
+
 	local mmu = c.mmu
 
 	local int = c.cpu.int
 
-	g.height = 832
+	g.height = love.graphics.getHeight()
 	local height = g.height
 
-	g.width = 1120
+	g.width = love.graphics.getWidth()
 	local width = g.width
 
 	local fbs = width * height
@@ -38,7 +40,7 @@ function gpu.new(vm, c)
 	g.framebuffer = ffi.new("uint8_t[?]", fbs) -- least significant bit is left-most pixel
 	local framebuffer = g.framebuffer
 
-	g.imageData = love.image.newImageData(1120, 832)
+	g.imageData = love.image.newImageData(width, height)
 	local imageData = g.imageData
 
 	g.image = love.graphics.newImage(imageData)
@@ -52,7 +54,9 @@ function gpu.new(vm, c)
 
 	g.vsync = false
 
-	vm.registerOpt("-display", function (arg, i)
+	local enabled = true
+
+	vm.registerOpt("-gpu,display", function (arg, i)
 		local w,h = tonumber(arg[i+1]), tonumber(arg[i+2])
 
 		g.height = h
@@ -75,6 +79,12 @@ function gpu.new(vm, c)
 		love.window.setMode(width, height)
 
 		return 3
+	end)
+
+	vm.registerOpt("-gpu,off", function (arg, i)
+		enabled = false
+
+		return 1
 	end)
 
 	local subRectX1 = false
@@ -218,29 +228,13 @@ function gpu.new(vm, c)
 		end
 	end
 
-	-- 8 128kb pages to accomodate 1 megapixel
-	mmu.mapArea(0x7A00, gpuh)
-	mmu.mapArea(0x7A01, function (s, t, offset, v)
-		return gpuh(s, t, offset + 0x20000, v)
-	end)
-	mmu.mapArea(0x7A02, function (s, t, offset, v)
-		return gpuh(s, t, offset + 0x40000, v)
-	end)
-	mmu.mapArea(0x7A03, function (s, t, offset, v)
-		return gpuh(s, t, offset + 0x60000, v)
-	end)
-	mmu.mapArea(0x7A04, function (s, t, offset, v)
-		return gpuh(s, t, offset + 0x80000, v)
-	end)
-	mmu.mapArea(0x7A05, function (s, t, offset, v)
-		return gpuh(s, t, offset + 0xA0000, v)
-	end)
-	mmu.mapArea(0x7A06, function (s, t, offset, v)
-		return gpuh(s, t, offset + 0xC0000, v)
-	end)
-	mmu.mapArea(0x7A07, function (s, t, offset, v)
-		return gpuh(s, t, offset + 0xE0000, v)
-	end)
+	local pcount = math.ceil((width*height)/131072)
+	log(string.format("mapping %d bytes of framebuffer from %x to %x", pcount*131072, 0x7A00*131072, (0x7A00+pcount)*131072))
+	for i = 0, pcount do
+		mmu.mapArea(0x7A00 + i, function (s, t, offset, v)
+			return gpuh(s, t, offset + (i * 0x20000), v)
+		end)
+	end
 
 	local port13 = 0
 	local port14 = 0
@@ -249,6 +243,8 @@ function gpu.new(vm, c)
 	local bus = c.bus
 
 	bus.addPort(0x12, function(s, t, v)
+		if not enabled then return 0 end
+
 		if s ~= 0 then
 			return 0
 		end
@@ -270,6 +266,8 @@ function gpu.new(vm, c)
 				-- port14 is backfill color
 
 				action(port13, port14, port15, 2)
+			elseif v == 5 then -- present
+				port13 = 1
 			end
 		else
 			return 0
@@ -301,24 +299,26 @@ function gpu.new(vm, c)
 	end)
 
 	vm.registerCallback("draw", function (x,y,s)
-		if m then
-			imageData:mapPixel(function (x,y,r,g,b,a)
-				local e = palette[framebuffer[y * width + x]]
+		if enabled then
+			if m then
+				imageData:mapPixel(function (x,y,r,g,b,a)
+					local e = palette[framebuffer[y * width + x]]
 
-				return e.r/255,e.g/255,e.b/255,1
-			end, subRectX1, subRectY1, subRectX2 - subRectX1, subRectY2 - subRectY1)
+					return e.r/255,e.g/255,e.b/255,1
+				end, subRectX1, subRectY1, subRectX2 - subRectX1, subRectY2 - subRectY1)
 
-			m = false
-			subRectX1 = false
+				m = false
+				subRectX1 = false
 
-			image:replacePixels(imageData)
-		end
+				image:replacePixels(imageData)
+			end
 
-		love.graphics.setColor(1,1,1,1)
-		love.graphics.draw(image)
+			love.graphics.setColor(1,1,1,1)
+			love.graphics.draw(image)
 
-		if g.vsync then
-			int(0x35)
+			if g.vsync then
+				int(0x35)
+			end
 		end
 	end)
 

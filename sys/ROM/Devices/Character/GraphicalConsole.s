@@ -1,21 +1,23 @@
 ConsoleFont:
-	.static Assets/font.bmp
+	.static Assets/font-terminus
 
 ;constants
 
-ConsoleFontWidth === 12
-ConsoleFontWidthA === 11 ;ConsoleFontWidth - 1
-ConsoleFontBytesPerRow === 2
-ConsoleFontHeight === 25
-ConsoleOffsetX === 48
+ConsoleFontWidth === 8
+ConsoleFontWidthA === 7 ;ConsoleFontWidth - 1
+ConsoleFontBytesPerRow === 1
+ConsoleFontHeight === 16
+ConsoleOffsetX === 4
 ConsoleOffsetY === 0
-ConsoleBorderTotalX === 96
+ConsoleBorderTotalX === 8
 ConsoleBorderTotalY === 0
 
-ConsoleFillColor === 0x63
+ConsoleCursorYOffset === 1
+ConsoleCursorHeight === 11
+ConsoleCursorWidth === 8
 
-ConsoleBGDefault === 0x63
-ConsoleFGDefault === 0x12
+ConsoleBGDefault === 0x00
+ConsoleFGDefault === 0x0F
 
 ConsoleInit:
 	push r0
@@ -48,6 +50,15 @@ ConsoleInit:
 	subi r0, r0, 1
 	sir.b ConsoleHM, r0
 
+	li r0, ConsolePutChar
+	li r1, CharDevNull
+	call CharDevRegister
+
+	lri.i r0, GraphicsHeight
+	cmpi r0, 0
+	be .out
+
+.out:
 	pop r1
 	pop r0
 	ret
@@ -56,7 +67,7 @@ ConsoleClear:
 	push r0
 
 	push r1
-	li r1, ConsoleFillColor
+	lri.b r1, ConsoleBGColor
 	call GraphicsFillScreen
 	pop r1
 
@@ -88,7 +99,7 @@ ConsoleNewline:
 	bl .out
 
 	li r0, ConsoleFontHeight
-	li r1, ConsoleFillColor
+	lri.b r1, ConsoleBGColor
 	call GraphicsScrollScreen
 
 	lri.b r1, ConsoleHM
@@ -139,14 +150,16 @@ ConsoleDrawCursor:
 	addi r1, r1, ConsoleOffsetX
 	addi r2, r2, ConsoleOffsetY
 
+	addi r2, r2, ConsoleCursorYOffset
+
 	;draw cursor
 	lri.b r4, ConsoleFGColor
 	
 	;thunk over to GraphicsFilledRectangle
 	mov r0, r1
 	mov r1, r2
-	li r2, ConsoleFontWidth
-	li r3, ConsoleFontHeight
+	li r2, ConsoleCursorWidth
+	li r3, ConsoleCursorHeight
 
 	call GraphicsFilledRectangle
 

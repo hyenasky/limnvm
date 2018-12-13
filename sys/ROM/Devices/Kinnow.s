@@ -15,6 +15,7 @@ GraphicsGPUInfo === 0x1
 GraphicsGPURectangle === 0x2
 GraphicsGPUVSync === 0x3
 GraphicsGPUScroll === 0x4
+GraphicsGPUPresent === 0x5
 
 GraphicsInt === 0x35
 
@@ -30,6 +31,9 @@ GraphicsInit:
 	call InterruptRegister
 
 	;request info from gpu
+	push rs
+	bclri rs, rs, 1
+
 	li r0, GraphicsGPUCmdPort
 	li r1, GraphicsGPUInfo
 	call BusCommand
@@ -41,6 +45,8 @@ GraphicsInit:
 	li r0, GraphicsGPUPortB
 	call BusReadInt
 	sir.i GraphicsHeight, r0
+
+	pop rs
 
 	lri.i r1, GraphicsWidth
 
@@ -129,6 +135,9 @@ GraphicsPutPixel:
 ;r3 - height
 ;r4 - color
 GraphicsFilledRectangle:
+	push rs
+	bclri rs, rs, 1
+
 	lshi r0, r0, 16
 	ior r0, r0, r1
 
@@ -151,11 +160,16 @@ GraphicsFilledRectangle:
 	li r1, GraphicsGPURectangle
 	call BusCommand
 
+	pop rs
+
 	ret
 
 ;r0 - rows
 ;r1 - fill
 GraphicsScrollScreen:
+	push rs
+	bclri rs, rs, 1
+
 	push r1
 	mov r1, r0
 	li r0, GraphicsGPUPortA
@@ -168,6 +182,8 @@ GraphicsScrollScreen:
 	li r0, GraphicsGPUCmdPort
 	li r1, GraphicsGPUScroll
 	call BusCommand
+
+	pop rs
 
 	ret
 

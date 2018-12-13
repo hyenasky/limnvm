@@ -1,6 +1,6 @@
-.include Devices/Bus.s
+.include Devices/Citron.s
 .include Devices/MMU.s
-.include Devices/EBGraphics.s
+.include Devices/Kinnow.s
 .include Devices/Blitter.s
 .include Devices/NVRAM.s
 

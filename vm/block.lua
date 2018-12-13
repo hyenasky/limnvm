@@ -12,6 +12,8 @@ function block.new(image, blocksize)
 
 	bd.file = io.open(image, "r+")
 
+	if not bd.file then return false end
+
 	bd.size = bd.file:seek("end")
 
 	bd.blocks = math.floor(bd.size / blocksize)

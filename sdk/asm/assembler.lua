@@ -47,7 +47,8 @@ local function pass2(lines) --format and tokenize src code (remove tabs and comm
 	local out = {}
 	for k,v in ipairs(lines) do
 		if v ~= "" then
-			if v:sub(1,1) ~= ";" then
+			local sc = v:sub(1,1)
+			if (sc ~= ";") and (sc ~= "#") then
 				local lout = ""
 				while (v:sub(1,1) == "\t") or (v:sub(1,1) == " ") do
 					v = v:sub(2)

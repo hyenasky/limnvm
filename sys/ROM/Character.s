@@ -25,8 +25,8 @@
 	GetChar 4
 end-struct
 
-DefaultStdOut === 1
-DefaultStdIn === 2
+CharFallbackStdIn === 2
+CharFallbackStdOut === 1
 
 CharDevNull:
 	li r0, 0xFFFF
@@ -34,33 +34,27 @@ CharDevNull:
 
 ;register default devices
 CharDevInit:
-	sii.b IOStdOut, DefaultStdOut
-	sii.b IOStdIn, DefaultStdIn
+	sii.b CharLastDev, 0
 
-	li r0, 0
-	li r1, SerialWrite
-	li r2, SerialRead
-	call CharDevRegister
-
-	li r0, 1
-	li r1, ConsolePutChar
-	li r2, CharDevNull
-	call CharDevRegister
-
-	li r0, 2
-	li r1, KeyboardWrite
-	li r2, KeyboardRead
-	call CharDevRegister
-
+	call SerialInit
+	call ConsoleInit
 	call KeyboardInit
 
 	ret
 
-;r0 - num
-;r1 - PutChar
-;r2 - GetChar
+;r0 - PutChar
+;r1 - GetChar
 CharDevRegister:
 	push r10
+	push r3
+	push r2
+
+	mov r2, r1
+	mov r1, r0
+
+	lri.b r0, CharLastDev
+	addi r3, r0, 1
+	sir.b CharLastDev, r3
 
 	muli r0, r0, CharDev_sizeof
 	addi r0, r0, CharDevTable
@@ -71,6 +65,8 @@ CharDevRegister:
 	addi r3, r0, CharDev_GetChar
 	srr.l r3, r2
 
+	pop r2
+	pop r3
 	pop r10
 	ret
 

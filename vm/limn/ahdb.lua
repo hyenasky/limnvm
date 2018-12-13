@@ -74,6 +74,8 @@ function ahdb.new(vm, c)
 
 			self.block = block.new(image, 4096)
 
+			if not self.block then return false end
+
 			self.blocks = self.block.blocks
 		end
 
