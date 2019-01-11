@@ -13,7 +13,7 @@ Ships with a pre-built boot ROM binary, a disktools image (see *Using the toolch
 ![Running the Antecedent boot firmware](https://i.imgur.com/lHf2gbu.png)
 ## Running
 
-Modify the EMU variable in the makefile to whatever your Love2D 11.0 executable is.
+Modify the `./love` shell script to point to your Love2D 11.0 executable.
 
 Then, type `make run` in the project directory.
 

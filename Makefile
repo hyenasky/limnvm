@@ -1,8 +1,7 @@
 ASM=./asm
 DRAGONC=./dragonc
 
-# modify this line to whatever love executable you have
-EMU=./love.app/Contents/MacOS/love ./vm
+EMU=./love ./vm
 
 ROM=./sys/antecedent/Antecedent.d
 ROMBIN=./bin/boot.bin
