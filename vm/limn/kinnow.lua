@@ -40,14 +40,12 @@ function gpu.new(vm, c)
 	g.framebuffer = ffi.new("uint8_t[?]", fbs) -- least significant bit is left-most pixel
 	local framebuffer = g.framebuffer
 
-	g.imageData = love.image.newImageData(width, height)
-	local imageData = g.imageData
+	local imageData = love.image.newImageData(width, height)
 
 	g.image = love.graphics.newImage(imageData)
 	local image = g.image
 
-	g.imageFFI = ffi.cast("uint32_t*", imageData:getPointer())
-	local imageFFI = g.imageFFI
+	imageData:release()
 
 	g.canvas = love.graphics.newCanvas(width,height)
 	local canvas = g.canvas
@@ -55,6 +53,11 @@ function gpu.new(vm, c)
 	g.vsync = false
 
 	local enabled = true
+
+	local windowX = 0
+	local windowY = 0
+	local windowW = 0
+	local windowH = 0
 
 	vm.registerOpt("-gpu,display", function (arg, i)
 		local w,h = tonumber(arg[i+1]), tonumber(arg[i+2])
@@ -93,7 +96,32 @@ function gpu.new(vm, c)
 	local subRectY2 = false
 	local m = false
 
+	local function saneX(x)
+		if x < 0 then
+			x = 0
+		end
+		if x >= width then
+			x = width - 1
+		end
+		return x
+	end
+
+	local function saneY(y)
+		if y < 0 then
+			y = 0
+		end
+		if y >= height then
+			y = height - 1
+		end
+		return y
+	end
+
 	local function subRect(x,y,x1,y1)
+		x = saneX(x)
+		y = saneY(y)
+		x1 = saneX(x1)
+		y1 = saneY(y1)
+
 		if not subRectX1 then -- first thingy this frame
 			subRectX1 = x
 			subRectY1 = y
@@ -114,6 +142,10 @@ function gpu.new(vm, c)
 		if y1 > subRectY2 then
 			subRectY2 = y1
 		end
+	end
+
+	local function dirtyWindow(x,y,w,h)
+
 	end
 
 	local function action(s, offset, v, d)
@@ -301,16 +333,24 @@ function gpu.new(vm, c)
 	vm.registerCallback("draw", function (x,y,s)
 		if enabled then
 			if m then
+				local uw, uh = subRectX2 - subRectX1, subRectY2 - subRectY1
+
+				local imageData = love.image.newImageData(uw, uh)
+
+				local base = (subRectY1 * width) + subRectX1
+
 				imageData:mapPixel(function (x,y,r,g,b,a)
-					local e = palette[framebuffer[y * width + x]]
+					local e = palette[framebuffer[base + (y * width + x)]]
 
 					return e.r/255,e.g/255,e.b/255,1
-				end, subRectX1, subRectY1, subRectX2 - subRectX1, subRectY2 - subRectY1)
+				end, 0, 0, uw, uh)
+
+				image:replacePixels(imageData, nil, nil, subRectX1, subRectY1)
+
+				imageData:release()
 
 				m = false
 				subRectX1 = false
-
-				image:replacePixels(imageData)
 			end
 
 			love.graphics.setColor(1,1,1,1)

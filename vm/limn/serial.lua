@@ -130,6 +130,8 @@ stream.]], 0, 10)
 					s.stream("\n")
 				elseif e == "\\" then
 					s.stream("\\")
+				elseif e == "b" then
+					s.stream(string.char(8))
 				end
 
 				i = i + 2

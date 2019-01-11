@@ -7,3 +7,9 @@ end
 procedure MmuWriteRegister (* v reg -- *)
 	4 * MmuAreaBase + !
 end
+
+const MmuTMRegister 0
+
+procedure MmuTotalMemory (* -- mem *)
+	MmuTMRegister MmuReadRegister
+end

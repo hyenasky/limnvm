@@ -5,15 +5,18 @@ table DTTYDriver
 	pointerof DTTYIOCtl
 	pointerof DTTYNumMinor
 	0
+	1
 endtable
 
 procedure DTTYInit (* -- *)
 	DTTYDriver DevAddDriver
 end
 
-procedure DTTYPut (* char minor -- status *)
+procedure DTTYPut (* char loc minor -- status *)
 	auto minor
 	minor!
+
+	drop
 
 	if (minor@ 0 ==)
 		KPutc OK return
@@ -22,9 +25,11 @@ procedure DTTYPut (* char minor -- status *)
 	ERR return
 end
 
-procedure DTTYGet (* minor -- char *)
+procedure DTTYGet (* loc minor -- char *)
 	auto minor
 	minor!
+
+	drop
 
 	if (minor@ 0 ==)
 		KGetc return

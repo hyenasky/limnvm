@@ -19,6 +19,11 @@ call _PUSH
 ;r1 contains blockdev number
 mov r0, r1
 call _PUSH
+
+;r2 contains args
+mov r0, r2
+call _PUSH
+
 b Main
 
 ;if main returns, itll go back into the ROM
@@ -51,11 +56,14 @@ procedure Error (* string -- *)
 end
 
 procedure Prompt (* -- *)
-	"@" PutString
+	'@' StdPutChar
 	PromptLine dup StringZero 5 GetString
 end
 
-procedure Main (* ciptr bootdev -- *)
+procedure Main (* ciptr bootdev args -- *)
+	auto args
+	args!
+
 	auto BootDevice
 
 	(* remember the boot device *)
@@ -64,23 +72,11 @@ procedure Main (* ciptr bootdev -- *)
 	(* initialize the client interface *)
 	CIPtr!
 
-	"==== Bootloader ====\n" PutString
-
-	"Bootdev? Default:" PutString
+	"vnix BOOTLOADER\nBoot0 on blkdev" PutString
 	BootDevice@ PutInteger
 	CR
 
-	Prompt
-
-	if (PromptLine gb 0 ~=)
-		PromptLine StringToInteger BootDevice!
-	end
-
-	"Boot0 on blockdev" PutString
-	BootDevice@ PutInteger
-	CR
-
-	"Loading volume descriptor block\n" PutString
+	"Loading VDB\n" PutString
 	0 VDBCache BootDevice@ ReadBlock
 
 	"Disk Info:\n" PutString
@@ -132,13 +128,14 @@ procedure Main (* ciptr bootdev -- *)
 	end
 
 	if (bpcount@ 0 ==)
-		"No bootable partitions.\n" Error
+		"None bootable.\n" Error
 		return
 	end
 
 	if (bpcount@ 1 >)
-		"boot partition? default:" PutString
+		"Boot partition? [" PutString
 		bootp@ PutInteger CR
+		']' StdPutChar
 		Prompt
 
 		if (PromptLine gb 0 ~=)
@@ -168,11 +165,13 @@ procedure Main (* ciptr bootdev -- *)
 	end
 
 	if (0x100000@ 0x0C001CA7 ~=)
-		"Invalid boot1\n" Error
+		"Bad boot1\n" Error
 		return
 	end
 
-	CIPtr@ BootDevice@ bootp@ PartitionStart asm "
+	CIPtr@ BootDevice@ bootp@ PartitionStart args@ asm "
+		call _POP
+		mov r4, r0
 		call _POP
 		mov r3, r0
 		call _POP

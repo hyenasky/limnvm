@@ -23,14 +23,21 @@ call _PUSH
 mov r0, r3
 call _PUSH
 
+;r4 contains args
+mov r0, r4
+call _PUSH
+
 b Main
 
 "
 
-procedure Main (* ciptr bootdev bootpartition partitiontable -- *)
+procedure Main (* ciptr bootdev bootpartition partitiontable args -- *)
+	auto args
 	auto BootDevice
 	auto BootPartition
 	auto PartitionTable
+
+	args!
 
 	PartitionTable!
 
@@ -45,6 +52,10 @@ procedure Main (* ciptr bootdev bootpartition partitiontable -- *)
 	"Boot1 on " PutString
 	BootDevice@ PutInteger
 	':' StdPutChar BootPartition@ PutInteger CR
+
+	if (args@ 0 ~=)
+		"kernel args: " PutString args@ PutString CR
+	end
 
 	BootDevice@ BootPartition@ PartitionTable@ IDiskInit
 	VFSInit
@@ -62,7 +73,9 @@ procedure Main (* ciptr bootdev bootpartition partitiontable -- *)
 		return
 	end
 
-	CIPtr@ BootDevice@ BootPartition@ PartitionTable@ asm "
+	CIPtr@ BootDevice@ BootPartition@ PartitionTable@ args@ asm "
+		call _POP
+		mov r4, r0
 		call _POP
 		mov r3, r0
 		call _POP

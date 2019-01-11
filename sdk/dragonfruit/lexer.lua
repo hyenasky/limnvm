@@ -63,6 +63,8 @@ function lex.new(src, ekc, ewhitespace)
 							t = t.."\n"
 						elseif c == "t" then
 							t = t.."\t"
+						elseif c == "[" then
+							t = t..string.char(0x1b)
 						else
 							t = t..c
 						end
@@ -91,6 +93,10 @@ function lex.new(src, ekc, ewhitespace)
 					rc = "\n"
 				elseif rc == "t" then
 					rc = "\t"
+				elseif rc == "b" then
+					rc = "\b"
+				elseif rc == "[" then
+					rc = string.char(0x1b)
 				end
 			end
 

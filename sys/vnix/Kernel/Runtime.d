@@ -28,10 +28,13 @@ procedure _DumpStack (* -- *)
 
 .loop:
 	cmp r0, r1
-	be .out
+	bge .out
 
 	lrr.l r3, r2
 	push r0
+	push r1
+	push r2
+	push r3
 	mov r0, r3
 	call _PUSH
 	call KPutx
@@ -39,10 +42,14 @@ procedure _DumpStack (* -- *)
 	li r0, 0xA
 	call _PUSH
 	call KPutc
+	pop r3
+	pop r2
+	pop r1
 	pop r0
 
 	addi r0, r0, 4
 	addi r2, r2, 4
+
 	b .loop
 
 .out:
@@ -129,14 +136,16 @@ procedure strtok (* str buf del -- next *)
 		auto char
 		str@ i@ + gb char!
 
+		char@ buf@ i@ + sb
+
 		if (char@ 0 ==)
 			0 return
 		end
 
-		char@ buf@ i@ + sb
-
 		i@ 1 + i!
 	end
+
+	0 buf@ i@ + sb
 
 	str@ i@ +
 end
@@ -185,16 +194,34 @@ procedure strntok (* str buf del n -- next *)
 		auto char
 		str@ i@ + gb char!
 
+		char@ buf@ i@ + sb
+
 		if (char@ 0 ==)
 			0 return
 		end
 
-		char@ buf@ i@ + sb
-
 		i@ 1 + i!
 	end
 
+	0 buf@ i@ + sb
+
 	str@ i@ +
+end
+
+procedure strcpy (* dest src -- *)
+	auto src
+	src!
+	auto dest
+	dest!
+
+	while (src@ gb 0 ~=)
+		src@ gb dest@ sb
+
+		dest@ 1 + dest!
+		src@ 1 + src!
+	end
+
+	0 dest@ sb
 end
 
 procedure atoi (* str -- n *)

@@ -19,6 +19,10 @@ call _PUSH
 mov r0, r3
 call _PUSH
 
+;r4 contains args string ptr
+mov r0, r4
+call _PUSH
+
 sir.l AnteSP, sp
 li sp, VNIXStack
 

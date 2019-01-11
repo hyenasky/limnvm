@@ -19,16 +19,24 @@ function computer.new(vm, memsize)
 	c.mmu = require("limn/mmu").new(vm, c, memsize)
 	c.cpu = require("limn/limn").new(vm, c)
 	c.bus = require("limn/citron").new(vm, c)
+	c.abus = require("limn/amanatsu").new(vm, c)
+	c.blitter = require("limn/blitter").new(vm, c)
 
 	-- devices
 	c.nvram = require("limn/nvram").new(vm, c)
 	c.rom = require("limn/rom").new(vm, c)
 	c.gpu = require("limn/kinnow").new(vm, c)
 	c.serial = require("limn/serial").new(vm, c)
-	c.keyboard = require("limn/keyboard").new(vm, c)
 	c.ahdb = require("limn/ahdb").new(vm, c)
-	c.blitter = require("limn/blitter").new(vm, c)
-	c.mouse = require("limn/mouse").new(vm, c)
+
+	-- amanatsu
+	local amtsu = c.abus
+
+	local akeyboard = require("limn/akeyboard")
+	local amouse = require("limn/amouse")
+
+	amtsu.addDevice(akeyboard.new(vm, c))
+	amtsu.addDevice(amouse.new(vm, c))
 
 	-- init
 	c.cpu.reset()

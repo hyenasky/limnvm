@@ -4,7 +4,7 @@ var PMMTotalPages 0
 procedure PMMInit (* -- *)
 	"PMM: init\n" KPrintf
 
-	ACIGetMem dup PMMTotalMemory!
+	MmuTotalMemory dup PMMTotalMemory!
 	4096 / PMMTotalPages!
 
 	PMMTotalPages@ "PMM: managing %d pages.\n" KPrintf

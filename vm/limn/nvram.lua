@@ -7,13 +7,13 @@ function nvram.new(vm, c)
 
 	local mmu = c.mmu
 
-	nr.mem = ffi.new("uint8_t[4096]")
+	nr.mem = ffi.new("uint8_t[64*1024]")
 	local mem = nr.mem
 
-	local sm = ffi.new("uint8_t[4096]")
+	local sm = ffi.new("uint8_t[64*1024]")
 
 	mmu.mapArea(0x7900, function (s, t, offset, v)
-		if offset > 4095 then
+		if offset >= 64*1024 then
 			return 0
 		end
 
@@ -60,41 +60,21 @@ function nvram.new(vm, c)
 
 	nr.nvramfile = false
 
-	vm.registerOpt("-nvram,autorun", function (arg, i)
-		local ar = arg[i + 1]
-
-		for i = 1, #ar do
-			local c = ar:sub(i,i)
-			mem[3+i] = string.byte(c)
-		end
-
-		mem[4+#ar] = 0
-
-		return 2
-	end)
-
-	vm.registerOpt("-nvram,stdin", function (arg, i)
-		local ar = arg[i + 1]
-
-		mem[132] = tonumber(ar)
-
-		return 2
-	end)
-
-	vm.registerOpt("-nvram,stdout", function (arg, i)
-		local ar = arg[i + 1]
-
-		mem[133] = tonumber(ar)
-
-		return 2
-	end)
-
-	vm.registerOpt("-nvram,")
-
 	vm.registerOpt("-nvram", function (arg, i)
 		nr.nvramfile = arg[i + 1]
 
 		local h = io.open(nr.nvramfile, "rb")
+
+		if not h then
+			h = io.open(nr.nvramfile, "wb")
+			for i = 0, 64*1024-1 do
+				h:write(string.char(0))
+			end
+			h:close()
+
+			h = io.open(nr.nvramfile, "rb")
+		end
+
 		local c = h:read("*a")
 
 		for i = 1, #c do
@@ -112,7 +92,7 @@ function nvram.new(vm, c)
 		log("saving nvram")
 
 		local h = io.open(nr.nvramfile, "wb")
-		for i = 0, 4095 do
+		for i = 0, 64*1024-1 do
 			h:write(string.char(sm[i]))
 		end
 	end)

@@ -662,13 +662,15 @@ function df.cblock(out, stream, endt)
 	end
 end
 
-function df.compile(stream, out)
-	out:a(io.open(sd.."prim.s", "r"):read("*a"))
+function df.compile(stream, out, prim)
+	if not prim then
+		out:a(io.open(sd.."prim.s", "r"):read("*a"))
+	end
 
 	df.cblock(out, stream, nil)
 end
 
-function df.c(src, path)
+function df.c(src, path, prim)
 	local out = {}
 	out.ds = ""
 	out.as = ""
@@ -684,7 +686,7 @@ function df.c(src, path)
 
 	out.rauto = {}
 
-	local automax = 30
+	local automax = 25
 
 	out.path = path
 
@@ -748,11 +750,12 @@ function df.c(src, path)
 	end
 
 	function out:newconst(name, val)
+		out:d(name.." === "..tostring(val))
 		out.const[name] = val
 	end
 
 	function out:newauto(name)
-		if out.auto._LAU > automax then
+		if out.auto._LAU >= automax then
 			print("can't create new auto var "..name..": ran out of registers")
 			return
 		end
@@ -780,7 +783,7 @@ function df.c(src, path)
 
 	local s = lexer.new(src, kc, whitespace)
 
-	df.compile(s, out)
+	df.compile(s, out, prim)
 
 	return df.opt(out.as .. "\n" .. out.ds)
 end

@@ -27,6 +27,8 @@ function mmu.new(vm, c, memsize)
 
 	m.translating = false
 
+	local lsa = 0
+
 	--areas are 128kb pages of translated address space that
 	--call back to a handler when accessed.
 	--they're a bit of a bottleneck. there's probably
@@ -79,6 +81,8 @@ function mmu.new(vm, c, memsize)
 		local m = areas[rshift(ptr, 17)]
 
 		if m ~= 0 then -- mapped
+			lsa = ptr
+
 			local e = areah[m](0, 0, band(ptr, 0x1FFFF))
 
 			return e
@@ -87,10 +91,13 @@ function mmu.new(vm, c, memsize)
 		-- no match. physmem it is
 
 		if (physstart <= ptr) and (physend >= ptr) then
+			lsa = ptr
+
 			local e = physmem[ptr - physstart]
 
 			return e
 		else
+			print(string.format("fb %x lsa %x", ptr, lsa))
 			mmu.fault(7) -- this is cpu dependent
 		end
 
@@ -102,12 +109,15 @@ function mmu.new(vm, c, memsize)
 		local m = areas[rshift(ptr, 17)]
 
 		if m ~= 0 then -- mapped
+			lsa = ptr
 			return areah[m](1, 0, band(ptr, 0x1FFFF))
 		end
 
 		-- no match. physmem it is
 
 		if (physstart <= ptr) and (physend >= ptr+1) then
+			lsa = ptr
+
 			local b = ptr - physstart
 
 			local u1 = physmem[b]
@@ -115,6 +125,7 @@ function mmu.new(vm, c, memsize)
 
 			return (u2 * 0x100) + u1 -- little endian
 		else
+			print(string.format("fi %x lsa %x", ptr, lsa))
 			mmu.fault(7) -- this is cpu dependent
 		end
 
@@ -126,12 +137,14 @@ function mmu.new(vm, c, memsize)
 		local m = areas[rshift(ptr, 17)]
 
 		if m ~= 0 then -- mapped
+			lsa = ptr
 			return areah[m](2, 0, band(ptr, 0x1FFFF))
 		end
 
 		-- no match. physmem it is
 
 		if (physstart <= ptr) and (physend >= ptr+3) then
+			lsa = ptr
 			local b = ptr - physstart
 
 			local u1 = physmem[b]
@@ -141,6 +154,7 @@ function mmu.new(vm, c, memsize)
 
 			return (u4 * 0x1000000) + (u3 * 0x10000) + (u2 * 0x100) + u1 -- little endian
 		else
+			print(string.format("fl %x lsa %x", ptr, lsa))
 			mmu.fault(7) -- this is cpu dependent
 		end
 
@@ -156,14 +170,17 @@ function mmu.new(vm, c, memsize)
 		local m = areas[rshift(ptr, 17)]
 
 		if m ~= 0 then -- mapped
+			lsa = ptr
 			return areah[m](0, 1, band(ptr, 0x1FFFF), v)
 		end
 
 		-- no match. physmem it is
 
 		if (physstart <= ptr) and (physend >= ptr) then
+			lsa = ptr
 			physmem[ptr - physstart] = v
 		else
+			print(string.format("sb %x lsa %x", ptr, lsa))
 			mmu.fault(7) -- this is cpu dependent
 		end
 	end
@@ -173,18 +190,21 @@ function mmu.new(vm, c, memsize)
 		local m = areas[rshift(ptr, 17)]
 
 		if m ~= 0 then -- mapped
+			lsa = ptr
 			return areah[m](1, 1, band(ptr, 0x1FFFF), v)
 		end
 
 		-- no match. physmem it is
 
 		if (physstart <= ptr) and (physend >= ptr+1) then
+			lsa = ptr
 			local u1, u2 = (math.modf(v/256))%256, v%256
 			local b = ptr - physstart
 
 			physmem[b] = u2
 			physmem[b+1] = u1 -- little endian
 		else
+			print(string.format("si %x lsa %x", ptr, lsa))
 			mmu.fault(7) -- this is cpu dependent
 		end
 	end
@@ -194,12 +214,14 @@ function mmu.new(vm, c, memsize)
 		local m = areas[rshift(ptr, 17)]
 
 		if m ~= 0 then -- mapped
+			lsa = ptr
 			return areah[m](2, 1, band(ptr, 0x1FFFF), v)
 		end
 
 		-- no match. physmem it is
 
 		if (physstart <= ptr) and (physend >= ptr+3) then
+			lsa = ptr
 			local u1, u2, u3, u4 = (math.modf(v/16777216))%256, (math.modf(v/65536))%256, (math.modf(v/256))%256, v%256
 			local b = ptr - physstart
 
@@ -208,6 +230,7 @@ function mmu.new(vm, c, memsize)
 			physmem[b+2] = u2
 			physmem[b+3] = u1 -- little endian
 		else
+			print(string.format("sl %x lsa %x", ptr, lsa))
 			mmu.fault(7) -- this is cpu dependent
 		end
 	end

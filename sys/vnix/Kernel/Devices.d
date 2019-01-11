@@ -7,6 +7,7 @@ struct DevDriver
 	4 FIOCtl
 	4 FNumMinor
 	4 IsBlock
+	4 WorldAccessible
 endstruct
 
 (*
@@ -16,8 +17,8 @@ buffer block minor FPut -- fail?
 buffer block minor FGet -- fail?
 
 for char devices:
-char minor FPut -- fail?
-minor FGet -- char
+char loc minor FPut -- fail?
+loc minor FGet -- char (or ERR if buffer empty)
 
 *)
 

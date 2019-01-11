@@ -35,6 +35,11 @@ function cpu.new(vm, c)
 
 	local translate = mmu.translate
 
+	p.nstall = 0
+	function p.stall(cycles)
+		p.nstall = p.nstall + cycles
+	end
+
 	function p.int(num) -- raise interrupt
 		local siq = #intq
 
@@ -69,6 +74,7 @@ function cpu.new(vm, c)
 
 	function p.fillState(v)
 		reg[34] = v
+
 		mmu.translating = (getBit(v, 2) == 1)
 	end
 	local fillState = p.fillState
@@ -694,6 +700,11 @@ function cpu.new(vm, c)
 
 	function p.cycle()
 		if running then
+			if p.nstall > 0 then
+				p.nstall = p.nstall - 1
+				return
+			end
+
 			faultOccurred = false
 
 			local siq = #intq
@@ -731,7 +742,7 @@ function cpu.new(vm, c)
 				end
 			else
 				reg[32] = pc + 1
-				print(string.format("ackack %X", reg[32]))
+				print(string.format("invalid opcode at %X: %d (%s)", pc, TfetchByte(pc), string.char(TfetchByte(pc))))
 				fault(1) -- invalid opcode
 			end
 		end

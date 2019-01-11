@@ -117,7 +117,7 @@ ACIPutChar:
 	push r30
 
 	call _POP
-	mov r0, r1
+	mov r1, r0
 
 	call _POP
 
@@ -132,11 +132,8 @@ ACIGetChar:
 	push r30
 
 	call _POP
-	mov r0, r1
 
-	call _POP
-
-	li r30, _CIC_StdGetChar
+	li r30, _CIC_GetChar
 	call _CIC_Call
 
 	call _PUSH

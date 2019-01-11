@@ -37,14 +37,14 @@ procedure InterruptsInit (* -- *)
 	"Interrupts: init done\n" KPrintf
 end
 
-procedure InterruptRegister (* rsmask handler num -- *)
+procedure InterruptRegister (* handler num -- *)
 	4 * InterruptsVT + !
 end
 
 procedure InterruptDisable (* -- rs *)
 	asm "
 
-	li r0, rs
+	mov r0, rs
 	bclri rs, rs, 1
 	call _PUSH
 
