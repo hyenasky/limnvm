@@ -26,6 +26,8 @@ const GConsoleFontHeight 12
 
 var GCEscape 0
 
+var GCLineLenBuf 0
+
 asm "
 
 GConsoleFont:
@@ -54,26 +56,94 @@ procedure BuildGConsole (* -- *)
 	"screen-bg" NVRAMGetVarNum GCColorBG!
 	"screen-fg" NVRAMGetVarNum GCColorFG!
 
-	GCGWidth@ GConsoleFontWidth / 1 - GCWidth!
-	GCGHeight@ GConsoleFontHeight / 1 - GCHeight!
+	GCGWidth@ GConsoleFontWidth / GCWidth!
+	GCGHeight@ GConsoleFontHeight / GCHeight!
+
+	GCHeight@ 4 * Calloc GCLineLenBuf!
+end
+
+procedure GConsoleLongestLine (* -- width *)
+	auto i
+	0 i!
+
+	auto longest
+	0 longest!
+
+	while (i@ GCHeight@ <)
+		auto len
+		i@ 4 * GCLineLenBuf@ + @ len!
+
+		if (len@ longest@ >)
+			len@ longest!
+		end
+
+		i@ 1 + i!
+	end
+
+	longest@
 end
 
 procedure GConsoleClear (* -- *)
+	auto ll
+	GConsoleLongestLine ll!
+
+	auto wc
+	if (ll@ 0 ==)
+		GCGWidth@ wc!
+	end else
+		ll@ GConsoleFontWidth * wc!
+	end
+
 	GCScreenNode@ DeviceSelectNode
-		GCColorBG@ GCGWidth@ GCGHeight@ 0 0 "rectangle" DCallMethod drop
+		GCColorBG@ wc@ GCGHeight@ 0 0 "rectangle" DCallMethod drop
 	DeviceExit
 
 	0 GCCurX!
 	0 GCCurY!
+
+	GCLineLenBuf@ Free
+	GCHeight@ 4 * Calloc GCLineLenBuf!
 end
 
 procedure GConsoleScroll (* rows -- *)
 	auto rows
 	rows!
 
+	auto rs
+	InterruptDisable rs!
+
 	GCScreenNode@ DeviceSelectNode
+		0 0 GConsoleLongestLine GConsoleFontWidth * GCGHeight@ "window" DCallMethod drop
 		GCColorBG@ rows@ GConsoleFontHeight * "scroll" DCallMethod drop
+		0 0 0 0 "window" DCallMethod drop
 	DeviceExit
+
+	rs@ InterruptRestore
+
+	auto k
+	GCHeight@ k!
+
+	auto gclb
+	GCLineLenBuf@ gclb!
+
+	auto r
+	gclb@ r!
+
+	auto max
+	GCHeight@ rows@ - 4 * gclb@ + max!
+
+	while (r@ max@ <)
+		r@ rows@ 4 * + @ r@ !
+		r@ 4 + r!
+	end
+
+	GCHeight@ rows@ - 4 * gclb@ + r!
+	GCHeight@ 4 * gclb@ + max!
+
+	while (r@ max@ <)
+		0 r@ !
+		r@ 4 + r!
+	end
 end
 
 procedure GConsoleDoCur (* color -- *)
@@ -91,6 +161,8 @@ procedure GConsoleDrawCur (* -- *)
 end
 
 procedure GConsoleNewline (* -- *)
+	GCCurX@ GCCurY@ 4 * GCLineLenBuf@ + !
+
 	0 GCCurX!
 	GCCurY@ 1 + GCCurY!
 
@@ -139,7 +211,7 @@ procedure GConsoleSetColor (* -- *)
 
 	if (GCEV@ 512 <)
 		GCColorBG@ GCColorOBG!
-		GCEV0@ GCColorBG!
+		GCEV0@ 256 - GCColorBG!
 		return
 	end
 

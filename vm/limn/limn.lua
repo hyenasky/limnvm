@@ -8,7 +8,7 @@ local floor = math.floor
 function cpu.new(vm, c)
 	local p = {}
 
-	p.reg = ffi.new("uint32_t[37]")
+	p.reg = ffi.new("uint32_t[38]")
 	local reg = p.reg
 
 	p.intq = {}
@@ -75,6 +75,7 @@ function cpu.new(vm, c)
 	function p.fillState(v)
 		reg[34] = v
 
+		local omts = mmu.translating
 		mmu.translating = (getBit(v, 2) == 1)
 	end
 	local fillState = p.fillState
@@ -85,7 +86,7 @@ function cpu.new(vm, c)
 	local getState = p.getState
 
 	function p.setState(n, v)
-		reg[34] = setBit(reg[34], n, v) or 0
+		fillState(setBit(reg[34], n, v) or 0)
 	end
 	local setState = p.setState
 
@@ -134,23 +135,34 @@ function cpu.new(vm, c)
 	function p.reset()
 		setState(0, 0) -- make sure we're in kernel mode
 
-		local resetVector = fetchLong(0xFFFE0000)
+		local resetVector = TfetchLong(0xFFFE0000)
 
 		reg[32] = resetVector
 	end
 
 	-- push long to stack
 	function p.push(v)
-		reg[33] = reg[33] - 4
-		TstoreLong(reg[33], v)
+		if kernelMode() then
+			reg[33] = reg[33] - 4
+			storeLong(reg[33], v)
+		else
+			reg[37] = reg[37] - 4
+			storeLong(reg[37], v)
+		end
 	end
 	local push = p.push
 
 	-- pop long from stack
 	function p.pop()
-		local v = TfetchLong(reg[33])
-		reg[33] = reg[33] + 4
-		return v
+		if kernelMode() then
+			local v = fetchLong(reg[33])
+			reg[33] = reg[33] + 4
+			return v
+		else
+			local v = fetchLong(reg[37])
+			reg[37] = reg[37] + 4
+			return v
+		end
 	end
 	local pop = p.pop
 
@@ -609,9 +621,13 @@ function cpu.new(vm, c)
 		end,
 		[0x48] = function (pc) -- [iret]
 			if kernelMode() then
-				reg[34] = pop()
-				reg[0] = pop()
-				return pop()
+				local nrs = pop()
+				local nr0 = pop()
+				local npc = pop()
+
+				fillState(nrs)
+				reg[0] = nr0
+				return npc
 			else
 				fault(3) -- privilege violation
 			end
@@ -640,18 +656,12 @@ function cpu.new(vm, c)
 			if kernelMode() then
 				local htta = reg[36]
 
-				print(string.format("%X", htta))
-
 				for i = 0, 35 do
 					if i == 34 then
 						fillState(TfetchLong(htta+(34*4)))
 					else
 						reg[i] = TfetchLong(htta+(i*4))
 					end
-				end
-
-				for i = 0, 36 do
-					print(string.format("%d = %X", i, reg[i]))
 				end
 
 				return reg[32]
@@ -666,13 +676,17 @@ function cpu.new(vm, c)
 			if kernelMode() then
 				local htta = reg[36]
 
+				local nrs = pop()
+				local n0 = pop()
+				local npc = pop()
+
 				for i = 0, 35 do
 					TstoreLong(htta+(i*4), reg[i])
 				end
 
-				TstoreLong(htta+(34*4), pop())
-				TstoreLong(htta+(0*4), pop())
-				TstoreLong(htta+(32*4), pop())
+				TstoreLong(htta+(34*4), nrs)
+				TstoreLong(htta+(0*4), n0)
+				TstoreLong(htta+(32*4), npc)
 			else
 				fault(3)
 			end
@@ -716,33 +730,32 @@ function cpu.new(vm, c)
 
 				local v = TfetchLong(reg[35] + n*4) -- get vector
 
+				local ors = reg[34]
+
 				if v ~= 0 then
+					local ors = reg[34]
+					setState(0, 0) -- kernel mode
+					setState(1, 0) -- disable interrupts
+					setState(2, 0) -- disable mmu
+
 					push(reg[32])
 					push(reg[0])
-					push(reg[34])
+					push(ors)
 
 					reg[32] = v
 					reg[0] = n
-					setState(0, 0) -- kernel mode
-					setState(1, 0) -- disable mmu
 					table.remove(intq, 1)
 				end
 			end
 
 			local pc = reg[32]
 
-			local e = optable[TfetchByte(pc)]
+			local e = optable[fetchByte(pc)]
 			if e then
-				local np, tr = e(pc)
-
-				if not tr then
-					reg[32] = np
-				else
-					reg[32] = translate(np)
-				end
+				reg[32] = e(pc)
 			else
 				reg[32] = pc + 1
-				print(string.format("invalid opcode at %X: %d (%s)", pc, TfetchByte(pc), string.char(TfetchByte(pc))))
+				print(string.format("invalid opcode at %X: %d (%s)", pc, fetchByte(pc), string.char(fetchByte(pc))))
 				fault(1) -- invalid opcode
 			end
 		end

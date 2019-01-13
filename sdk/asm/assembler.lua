@@ -43,7 +43,7 @@ local function pass1(source) --turn into lines
 	return lineate(source)
 end
 
-local function pass2(lines) --format and tokenize src code (remove tabs and comments)
+local function pass2(lines, file) --format and tokenize src code (remove tabs and comments)
 	local out = {}
 	for k,v in ipairs(lines) do
 		if v ~= "" then
@@ -79,7 +79,7 @@ local function pass2(lines) --format and tokenize src code (remove tabs and comm
 					lout = v
 				end
 				if lout ~= "" then
-					out[#out+1] = {["lit"] = lout, ["loc"] = k, ["file"] = "root"}
+					out[#out+1] = {["lit"] = lout, ["loc"] = k, ["file"] = file}
 				end
 			end
 		end
@@ -410,7 +410,7 @@ function asm.as(source, sym, p)
 	bd = sp
 
 	if sym == true then
-		return pass5(pass4(pass3(passi(pass2(pass1(source))))), true), labels
+		return pass5(pass4(pass3(passi(pass2(pass1(source)), "root"))), true), labels
 	else
 		return pass5(pass4(pass3(passi(pass2(pass1(source))))))
 	end

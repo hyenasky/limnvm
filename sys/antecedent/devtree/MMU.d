@@ -3,6 +3,9 @@ procedure BuildMMU (* -- *)
 		"mmu" DSetName
 
 		MmuTotalMemory "totalram" DAddProperty
+
+		pointerof MmuReadRegister "readRegister" DAddMethod
+		pointerof MmuWriteRegister "writeRegister" DAddMethod
 	DeviceExit
 end
 

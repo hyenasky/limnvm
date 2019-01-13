@@ -142,7 +142,7 @@ procedure MenuButtonBoot (* -- *)
 		"screen-bg" NVRAMGetVarNum MenuGWidth@ MenuGHeight@ 0 0 "rectangle" DCallMethod drop
 	DeviceExit
 
-	AutoBoot drop
+	[AutoBoot]BootErrors@ " boot: %s\n" Printf
 
 	Reset
 end

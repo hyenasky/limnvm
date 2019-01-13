@@ -4,7 +4,7 @@ procedure Main (* -- *)
 		"false"
 	end
 
-	if ("true" strcmp ~~)
+	if ("true" strcmp ~~ )
 		Menu
 	end
 
@@ -14,7 +14,7 @@ procedure Main (* -- *)
 	end
 
 	if ("true" strcmp)
-		AutoBoot
+		[AutoBoot]BootErrors@ " boot: %s\n" Printf
 	end
 
 	Monitor

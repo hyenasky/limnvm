@@ -15,6 +15,8 @@ local palette = require("limn/kinnow_palette")
 --  2: draw rectangle
 --  3: enable vsync
 --  4: scroll
+--  5: present
+--  6: window
 -- port 0x13: data
 -- port 0x14: data
 -- port 0x15: data
@@ -56,8 +58,19 @@ function gpu.new(vm, c)
 
 	local windowX = 0
 	local windowY = 0
-	local windowW = 0
-	local windowH = 0
+	local windowX1 = width-1
+	local windowY1 = height-1
+	local windowW = width
+	local windowH = height
+
+	local function setWindow(x,y,w,h)
+		windowX = x
+		windowY = y
+		windowW = w
+		windowH = h
+		windowX1 = x+w-1
+		windowY1 = y+h-1
+	end
 
 	vm.registerOpt("-gpu,display", function (arg, i)
 		local w,h = tonumber(arg[i+1]), tonumber(arg[i+2])
@@ -79,7 +92,18 @@ function gpu.new(vm, c)
 		g.framebuffer = ffi.new("uint8_t[?]", fbs)
 		framebuffer = g.framebuffer
 
-		love.window.setMode(width, height)
+		g.image:release()
+
+		local imageData = love.image.newImageData(width, height)
+
+		g.image = love.graphics.newImage(imageData)
+		image = g.image
+
+		imageData:release()
+
+		love.window.setMode(width, height, {["resizable"]=true})
+
+		setWindow(0,0,width,height)
 
 		return 3
 	end)
@@ -145,7 +169,22 @@ function gpu.new(vm, c)
 	end
 
 	local function dirtyWindow(x,y,w,h)
+		x = (x or 0) + windowX
+		y = (y or 0) + windowY
+		w = w or windowW
+		h = h or windowH
 
+
+		subRect(x,y,x+w,y+h)
+	end
+
+	local function setWindow(x,y,w,h)
+		windowX = x
+		windowY = y
+		windowW = w
+		windowH = h
+		windowX1 = x+w-1
+		windowY1 = y+h-1
 	end
 
 	local function action(s, offset, v, d)
@@ -159,7 +198,7 @@ function gpu.new(vm, c)
 				local bx = offset % bytesPerRow
 				local by = floor(offset / bytesPerRow)
 
-				subRect(bx,by,bx+1,by+1)
+				subRect(bx,by,bx,by)
 			elseif s == 1 then
 				-- 2 modified pixels
 
@@ -172,7 +211,7 @@ function gpu.new(vm, c)
 				local bx = offset % bytesPerRow
 				local by = floor(offset / bytesPerRow)
 
-				subRect(bx,by,bx+2,by+1)
+				subRect(bx,by,bx+1,by)
 			elseif s == 2 then
 				-- 4 modified pixels
 
@@ -189,7 +228,7 @@ function gpu.new(vm, c)
 				local bx = offset % bytesPerRow
 				local by = floor(offset / bytesPerRow)
 
-				subRect(bx,by,bx+4,by+1)
+				subRect(bx,by,bx+3,by)
 			end
 		elseif d == 1 then -- rectangle
 			local rw = rshift(s, 16)
@@ -198,30 +237,32 @@ function gpu.new(vm, c)
 			local rx = rshift(offset, 16)
 			local ry = band(offset, 0xFFFF)
 
-			subRect(rx,ry,rx+rw,ry+rh)
+			dirtyWindow(rx,ry,rw,rh)
 
-			for x = rx, rw+rx-1 do
-				for y = ry, rh+ry-1 do
+			local wrx,wry = rx+windowX, ry+windowY
+
+			for x = wrx, rw+wrx do
+				for y = wry, rh+wry do
 					framebuffer[y * width + x] = v
 				end
 			end
 		elseif d == 2 then -- scroll
-			subRect(0,0,width-1,height-1)
+			dirtyWindow()
 
 			local rows = s
 			local color = offset
 
 			local mod = rows * width
 
-			for y = 0, height-rows-1 do
-				for x = 0, width-1 do
+			for y = windowY, windowY1-rows do
+				for x = windowX, windowX1 do
 					local b = y * width + x
 					framebuffer[b] = framebuffer[b + mod]
 				end
 			end
 
-			for y = height-rows, height-1 do
-				for x = 0, width-1 do
+			for y = windowY1-rows, windowY1 do
+				for x = windowX, windowX1 do
 					framebuffer[y * width + x] = color
 				end
 			end
@@ -261,7 +302,7 @@ function gpu.new(vm, c)
 	end
 
 	local pcount = math.ceil((width*height)/131072)
-	log(string.format("mapping %d bytes of framebuffer from %x to %x", pcount*131072, 0x7A00*131072, (0x7A00+pcount)*131072))
+	log(string.format("mapping %d bytes of framebuffer from %x to %x", pcount*131072, 0x7A00*131072, (0x7A00+pcount)*131072-1))
 	for i = 0, pcount do
 		mmu.mapArea(0x7A00 + i, function (s, t, offset, v)
 			return gpuh(s, t, offset + (i * 0x20000), v)
@@ -300,6 +341,25 @@ function gpu.new(vm, c)
 				action(port13, port14, port15, 2)
 			elseif v == 5 then -- present
 				port13 = 1
+			elseif v == 6 then -- window
+				-- port13 is x
+				-- port14 is y
+				-- port15 is w x h, both 16-bit
+
+				local w = rshift(port15, 16)
+				local h = band(port15, 0xFFFF)
+
+				local x = port13
+				local y = port14
+
+				if (w == 0) or (h == 0) then
+					x = 0
+					y = 0
+					w = width
+					h = height
+				end
+
+				setWindow(x, y, w, h)
 			end
 		else
 			return 0
@@ -333,7 +393,12 @@ function gpu.new(vm, c)
 	vm.registerCallback("draw", function (x,y,s)
 		if enabled then
 			if m then
-				local uw, uh = subRectX2 - subRectX1, subRectY2 - subRectY1
+				local uw, uh = subRectX2 - subRectX1 + 1, subRectY2 - subRectY1 + 1
+
+				if (uw == 0) or (uh == 0) then
+					m = false
+					return
+				end
 
 				local imageData = love.image.newImageData(uw, uh)
 

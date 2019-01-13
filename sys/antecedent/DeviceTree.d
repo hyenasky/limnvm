@@ -94,7 +94,7 @@ procedure DeviceSelect (* path -- *)
 
 	DevCurrent@ DevStackPUSH
 
-	path@ DevTreeWalk DevCurrent!
+	path@ DevTreeWalk dup if (0 ~=) DevCurrent! end else drop end
 end
 
 procedure DeviceNNew (* -- node *)

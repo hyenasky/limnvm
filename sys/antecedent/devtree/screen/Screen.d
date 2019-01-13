@@ -11,6 +11,7 @@ const ScreenGPUInfo 0x1
 const ScreenGPURectangle 0x2
 const ScreenGPUVsync 0x3
 const ScreenGPUScroll 0x4
+const ScreenGPUWindow 0x6
 
 var ScreenVsyncList 0
 
@@ -39,6 +40,7 @@ procedure BuildScreen (* -- *)
 
 		pointerof ScreenRectangle "rectangle" DAddMethod
 		pointerof ScreenScroll "scroll" DAddMethod
+		pointerof ScreenWindow "window" DAddMethod
 		pointerof ScreenVsyncAdd "vsyncAdd" DAddMethod
 	DeviceExit
 
@@ -54,7 +56,33 @@ procedure BuildScreen (* -- *)
 	ScreenVsyncOn
 end
 
+procedure ScreenWindow (* x y w h -- *)
+	auto h
+	h!
 
+	auto w
+	w!
+
+	auto y
+	y!
+
+	auto x
+	x!
+
+	auto wh
+	w@ 16 << h@ | wh!
+
+	auto rs
+	InterruptDisable rs!
+
+	x@ ScreenGPUPortA DCitronOutl
+	y@ ScreenGPUPortB DCitronOutl
+	wh@ ScreenGPUPortC DCitronOutl
+
+	ScreenGPUWindow ScreenGPUCmdPort DCitronCommand
+
+	rs@ InterruptRestore
+end
 
 asm "
 

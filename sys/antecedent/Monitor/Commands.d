@@ -107,6 +107,10 @@ procedure MonitorCommandsInit (* -- *)
 	MonitorAddCommand
 end
 
+procedure MonitorCommandHinv (* -- *)
+
+end
+
 procedure MonitorCommandNVReset (* -- *)
 	NVRAMFormat
 end
@@ -362,8 +366,10 @@ end
 procedure MonitorCommandBanner (* -- *)
 	'\n' dup Putc Putc
 	
-	"boot firmware up\n" BannerPrint
-	"author" DGetProperty "version" DGetProperty DGetName "Implementation details: %s %s written by %s\n" BannerPrint
+	"/" DeviceSelect
+		"boot firmware up\n" BannerPrint
+		"author" DGetProperty "version" DGetProperty DGetName "Implementation details: %s %s written by %s\n" BannerPrint
+	DeviceExit
 
 	"/cpu" DeviceSelect
 		"type" DGetProperty "CPU type: %s\n" BannerPrint

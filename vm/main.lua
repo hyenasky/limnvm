@@ -17,7 +17,7 @@ local vm = {}
 
 vm.speed = 1
 
-vm.hz = 5000000
+vm.hz = 7000000
 vm.targetfps = 60
 vm.instructionsPerTick = 0
 

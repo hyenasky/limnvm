@@ -159,9 +159,9 @@ procedure AHDBRead (* ptr block -- ok? *)
 	auto id
 	"id" DGetProperty id!
 
-	"offset" DGetProperty block@ + block!
-
 	if (block@ "blocks" DGetProperty >=) rs@ InterruptRestore ERR return end
+
+	"offset" DGetProperty block@ + block!
 
 	1 AHDBSpinning!
 
@@ -190,9 +190,9 @@ procedure AHDBWrite (* ptr block -- ok? *)
 	auto id
 	"id" DGetProperty id!
 
-	"offset" DGetProperty block@ + block!
-
 	if (block@ "blocks" DGetProperty >=) rs@ InterruptRestore ERR return end
+
+	"offset" DGetProperty block@ + block!
 
 	1 AHDBSpinning!
 
