@@ -165,6 +165,7 @@ local regs = {
 	["rs"]  = 34,
 	["ivt"] = 35,
 	["htta"] = 36,
+	["usp"] = 37,
 }
 
 return {inst, regs}

@@ -83,6 +83,11 @@ procedure DevTreeWalk (* path -- node or 0 *)
 	cnode@
 end
 
+procedure DeviceParent (* -- *)
+	DevCurrent@ DevStackPUSH
+	DevCurrent@ TreeNodeParent DevCurrent!
+end
+
 procedure DeviceSelectNode (* node -- *)
 	DevCurrent@ DevStackPUSH
 	DevCurrent!

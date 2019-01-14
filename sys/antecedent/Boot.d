@@ -102,6 +102,7 @@ procedure BootNode (* devnode args -- ok? *)
 				5 return (* failed to load boot blocks *)
 			end
 
+			bblock@ 1 + bblock!
 			i@ 1 + i!
 			ptr@ 4096 + ptr!
 		end
@@ -117,6 +118,9 @@ procedure BootNode (* devnode args -- ok? *)
 
 	call _POP
 	mov r10, r0
+
+	li r3, _STACK
+	li r4, _STACK_PTR
 
 	call _POP
 	mov r2, r0

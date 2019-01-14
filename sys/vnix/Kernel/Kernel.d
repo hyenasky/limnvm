@@ -1,7 +1,10 @@
 #include "Const.d"
 #include "Start.d"
 #include "Runtime.d"
-#include "ACI.d"
+#include "lib/List.d"
+#include "lib/Tree.d"
+#include "Antecedent/ACI.d"
+#include "Antecedent/DeviceTree.d"
 #include "KPrint.d"
 #include "PMM.d"
 #include "KHeap.d"
@@ -13,16 +16,10 @@
 #include "Extra/Bootsplash.d"
 
 var BootDevice 0
-var BootPartition 0
-var PartitionTable 0
 
-procedure Main (* ciptr bootdev bootpartition partitiontable args -- *)
+procedure Main (* ciptr bootdev args -- *)
 	auto args
 	args!
-
-	PartitionTable!
-
-	BootPartition!
 
 	(* remember the boot device *)
 	BootDevice!
@@ -38,6 +35,8 @@ procedure Main (* ciptr bootdev bootpartition partitiontable args -- *)
 	args@ ArgsInit
 	KConsoleInit
 	DevInit
+
+	APIDevTree DeviceTreeInit
 
 	GraphicsInit
 	Bootsplash

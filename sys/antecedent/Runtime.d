@@ -1,10 +1,14 @@
 procedure _UNDERFLOW (* -- *)
 	asm "
 
-	li r0, \"u\"
-	.db 0xF1
+	pop r0
+	pop r0
+	call _PUSH
 
 	"
+
+	"underflow at %x\n" Printf
+
 	while (1) end
 end
 

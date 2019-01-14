@@ -144,6 +144,8 @@ procedure MenuButtonBoot (* -- *)
 
 	[AutoBoot]BootErrors@ " boot: %s\n" Printf
 
+	Monitor
+
 	Reset
 end
 

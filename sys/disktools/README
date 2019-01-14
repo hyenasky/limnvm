@@ -1,7 +1,0 @@
-Tiny bootable utility. Lets you format disks as vnix-compatible, including partitioning etc
-
-Run 'h' at the prompt for more information. 'q' will exit back to the ANTECEDENT monitor.
-
--- Boot process --
-ANTECEDENT loads the boot sector (sector #1) at 0xA0000.
-This program loads disktools sequentially into memory out of sector 2 to sector 32 (30 sectors) at 0x100000, and jumps there.

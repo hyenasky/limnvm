@@ -3,7 +3,7 @@
 var CIPtr 0
 
 procedure _UNDERFLOW (* -- *)
-	"Runtime error: Stack underflow.\n" PutString
+	"Runtime error: Stack underflow.\n" Printf
 	while (1) end
 end
 
@@ -17,7 +17,6 @@ asm "
 _CIC_Call:
 	push r29
 	lri.l r29, CIPtr
-	muli r30, r30, 4
 	add r30, r30, r29
 	lrr.l r30, r30
 
@@ -28,42 +27,55 @@ _CIC_Call:
 .e:
 	br r30
 
-_CIC_PutString === 0
-_CIC_GetString === 1
-_CIC_StdPutChar === 2
-_CIC_StdGetChar === 3
-_CIC_PutChar === 4
-_CIC_GetChar === 5
-_CIC_PutInteger === 6
-_CIC_PutIntegerD === 7
-_CIC_ListBDevs === 8
-_CIC_BlockDriverList === 9
-_CIC_BlockDriverRegister === 10
-_CIC_ReadBlock === 11
-_CIC_WriteBlock === 12
-_CIC_StringZero === 13
-_CIC_StringCopy === 14
-_CIC_StringLength === 15
-_CIC_StringToInteger === 16
-_CIC_StringTokenize === 17
-_CIC_Reset === 18
-_CIC_InterruptRegister === 19
-_CIC_StringCompare === 20
+_CIC_Putc === 0
+_CIC_Getc === 4
+_CIC_Gets === 8
+_CIC_Puts === 12
+_CIC_DevTree === 16
+_CIC_Malloc === 20
+_CIC_Calloc === 24
+_CIC_Free === 28
+_CIC_PUSH === 32
+_CIC_POP === 36
 
-; string --
-PutString:
+; v --
+ANTEPush:
 	push r30
 
 	call _POP
 
-	li r30, _CIC_PutString
+	li r30, _CIC_PUSH
+	call _CIC_Call
+
+	pop r30
+	ret
+
+; -- v
+ANTEPop:
+	push r30
+
+	li r30, _CIC_POP
+	call _CIC_Call
+
+	call _PUSH
+
+	pop r30
+	ret
+
+; string --
+Puts:
+	push r30
+
+	call _POP
+
+	li r30, _CIC_Puts
 	call _CIC_Call
 
 	pop r30
 	ret
 
 ; buffer maxchars --
-GetString:
+Gets:
 	push r30
 
 	call _POP
@@ -71,31 +83,31 @@ GetString:
 
 	call _POP
 
-	li r30, _CIC_GetString
+	li r30, _CIC_Gets
 	call _CIC_Call
 
 	pop r30
 	ret
 
 ; char -- 
-StdPutChar:
+Putc:
 	push r30
 
 	call _POP
 
-	li r30, _CIC_StdPutChar
+	li r30, _CIC_Putc
 	call _CIC_Call
 
 	pop r30
 	ret
 
 ; -- char
-StdGetChar:
+Getc:
 	push r30
 
 	call _POP
 
-	li r30, _CIC_StdGetChar
+	li r30, _CIC_Getc
 	call _CIC_Call
 
 	call _PUSH
@@ -103,31 +115,28 @@ StdGetChar:
 	pop r30
 	ret
 
-; char dev --
-PutChar:
+; -- root dcp
+APIDevTree:
 	push r30
 
-	call _POP
+	li r30, _CIC_DevTree
+	call _CIC_Call
+
+	call _PUSH
+
 	mov r0, r1
-
-	call _POP
-
-	li r30, _CIC_PutChar
-	call _CIC_Call
+	call _PUSH
 
 	pop r30
 	ret
 
-; dev -- char
-GetChar:
+; sz -- ptr
+Malloc:
 	push r30
 
 	call _POP
-	mov r0, r1
 
-	call _POP
-
-	li r30, _CIC_StdGetChar
+	li r30, _CIC_Malloc
 	call _CIC_Call
 
 	call _PUSH
@@ -135,68 +144,13 @@ GetChar:
 	pop r30
 	ret
 
-; integer --
-PutInteger:
+; sz -- ptr
+Calloc:
 	push r30
 
 	call _POP
 
-	li r30, _CIC_PutInteger
-	call _CIC_Call
-
-	pop r30
-	ret
-
-; integer --
-PutIntegerD:
-	push r30
-
-	call _POP
-
-	li r30, _CIC_PutIntegerD
-	call _CIC_Call
-
-	pop r30
-	ret
-
-; major --
-ListBDevs:
-	push r30
-
-	call _POP
-
-	li r30, _CIC_ListBDevs
-	call _CIC_Call
-
-	pop r30
-	ret
-
-; --
-BlockDriverList:
-	push r30
-
-	li r30, _CIC_BlockDriverList
-	call _CIC_Call
-
-	pop r30
-	ret
-
-; name ReadBlock WriteBlock List -- major
-BlockDriverRegister:
-	push r30
-
-	call _POP
-	mov r3, r0
-
-	call _POP
-	mov r2, r0
-
-	call _POP
-	mov r1, r0
-
-	call _POP
-
-	li r30, _CIC_BlockDriverRegister
+	li r30, _CIC_Calloc
 	call _CIC_Call
 
 	call _PUSH
@@ -204,167 +158,293 @@ BlockDriverRegister:
 	pop r30
 	ret
 
-; blocknum buffer dev --
-ReadBlock:
-	push r30
-
-	call _POP
-	mov r3, r0
-
-	call _POP
-	mov r2, r0
-
-	call _POP
-	mov r1, r0
-
-	mov r0, r3
-
-	li r30, _CIC_ReadBlock
-	call _CIC_Call
-
-	pop r30
-	ret
-
-; blocknum buffer dev --
-WriteBlock:
-	push r30
-
-	call _POP
-	mov r3, r0
-
-	call _POP
-	mov r2, r0
-
-	call _POP
-	mov r1, r0
-
-	mov r0, r3
-
-	li r30, _CIC_WriteBlock
-	call _CIC_Call
-
-	pop r30
-	ret
-
-; string --
-StringZero:
+; ptr -- 
+Free:
 	push r30
 
 	call _POP
 
-	li r30, _CIC_StringZero
+	li r30, _CIC_Free
 	call _CIC_Call
-
-	pop r30
-	ret
-
-; dest src --
-StringCopy:
-	push r30
-
-	call _POP
-	mov r1, r0
-
-	call _POP
-
-	li r30, _CIC_StringCopy
-	call _CIC_Call
-
-	pop r30
-	ret
-
-; string -- length
-StringLength:
-	push r30
-
-	call _POP
-
-	li r30, _CIC_StringLength
-	call _CIC_Call
-
-	call _PUSH
-
-	pop r30
-	ret
-
-; string -- length
-StringToInteger:
-	push r30
-
-	call _POP
-
-	li r30, _CIC_StringToInteger
-	call _CIC_Call
-
-	call _PUSH
-
-	pop r30
-	ret
-
-; string buffer delimiter -- next
-StringTokenize:
-	push r30
-
-	call _POP
-	mov r2, r0
-
-	call _POP
-	mov r1, r0
-
-	call _POP
-
-	li r30, _CIC_StringTokenize
-	call _CIC_Call
-
-	call _PUSH
-
-	pop r30
-	ret
-
-; --
-Reset:
-	push r30
-
-	li r30, _CIC_Reset
-	call _CIC_Call
-
-	pop r30
-	ret
-
-; handler interrupt --
-InterruptRegister:
-	push r30
-
-	call _POP
-	mov r1, r0
-
-	call _POP
-
-	xch r1, r0
-
-	li r30, _CIC_InterruptRegister
-	call _CIC_Call
-
-	pop r30
-	ret
-
-; str1 str2 -- result
-StringCompare:
-	push r30
-
-	call _POP
-	mov r1, r0
-
-	call _POP
-
-	xch r1, r0
-
-	li r30, _CIC_StringCompare
-	call _CIC_Call
-
-	call _PUSH
 
 	pop r30
 	ret
 
 "
+
+procedure Call (* ... ptr -- ... *)
+	asm "
+
+	call _POP
+	br r0
+
+	"
+end
+
+procedure max (* n1 n2 -- max *)
+	auto n2
+	n2!
+
+	auto n1
+	n1!
+
+	if (n2@ n1@ >) n2@ end else n1@ end
+end
+
+procedure min (* n1 n2 -- min *)
+	auto n2
+	n2!
+
+	auto n1
+	n1!
+
+	if (n2@ n1@ <) n2@ end else n1@ end
+end
+
+procedure itoa (* n buf -- *)
+	auto str
+	str!
+
+	auto n
+	n!
+
+	auto i
+	0 i!
+
+	while (1)
+		n@ 10 % '0' + str@ i@ + sb
+		i@ 1 + i!
+		n@ 10 / n!
+		if (n@ 0 ==)
+			break
+		end
+	end
+
+	0 str@ i@ + sb
+	str@ reverse
+end
+
+procedure reverse (* str -- *)
+	auto str
+	str!
+
+	auto i
+	auto j
+	auto c
+
+	0 i!
+	str@ strlen 1 - j!
+
+	while (i@ j@ <)
+		str@ i@ + gb c!
+
+		str@ j@ + gb str@ i@ + sb
+		c@ str@ j@ + sb
+
+		i@ 1 + i!
+		j@ 1 - j!
+	end
+end
+
+procedure memset (* ptr size wot -- *)
+	auto wot
+	wot!
+
+	auto size
+	size!
+
+	auto ptr
+	ptr!
+
+	auto max
+	ptr@ size@ + max!
+	while (ptr@ max@ <)
+		wot@ ptr@ sb
+		ptr@ 1 + ptr!
+	end
+end
+
+procedure strcmp (* str1 str2 -- equal? *)
+	auto str1
+	str1!
+
+	auto str2
+	str2!
+
+	auto i
+	0 i!
+
+	while (str1@ i@ + gb str2@ i@ + gb ==)
+		if (str1@ i@ + gb 0 ==)
+			1 return
+		end
+
+		i@ 1 + i!
+	end
+
+	0 return
+end
+
+procedure strlen (* str -- size *)
+	auto str
+	str!
+
+	auto size
+	0 size!
+
+	while (str@ gb 0 ~=)
+		size@ 1 + size!
+		str@ 1 + str!
+	end
+
+	size@ return
+end
+
+procedure strtok (* str buf del -- next *)
+	auto del
+	del!
+
+	auto buf
+	buf!
+
+	auto str
+	str!
+
+	auto i
+	0 i!
+
+	if (str@ gb 0 ==)
+		0 return
+	end
+
+	while (str@ gb del@ ==)
+		str@ 1 + str!
+	end
+
+	while (str@ i@ + gb del@ ~=)
+		auto char
+		str@ i@ + gb char!
+
+		char@ buf@ i@ + sb
+
+		if (char@ 0 ==)
+			0 return
+		end
+
+		i@ 1 + i!
+	end
+
+	0 buf@ i@ + sb
+
+	str@ i@ +
+end
+
+procedure strzero (* str -- *)
+	auto str
+	str!
+
+	auto i
+	0 i!
+	while (str@ i@ + gb 0 ~=)
+		0 str@ i@ + sb
+		i@ 1 + i!
+	end
+end
+
+procedure strntok (* str buf del n -- next *)
+	auto n
+	n!
+
+	auto del
+	del!
+
+	auto buf
+	buf!
+
+	auto str
+	str!
+
+	auto i
+	0 i!
+
+	if (str@ gb 0 ==)
+		0 return
+	end
+
+	while (str@ gb del@ ==)
+		str@ 1 + str!
+	end
+
+	while (str@ i@ + gb del@ ~=)
+		if (i@ n@ >)
+			break
+		end
+
+		auto char
+		str@ i@ + gb char!
+
+		char@ buf@ i@ + sb
+
+		if (char@ 0 ==)
+			0 return
+		end
+
+		i@ 1 + i!
+	end
+
+	0 buf@ i@ + sb
+
+	str@ i@ +
+end
+
+procedure strcpy (* dest src -- *)
+	auto src
+	src!
+	auto dest
+	dest!
+
+	while (src@ gb 0 ~=)
+		src@ gb dest@ sb
+
+		dest@ 1 + dest!
+		src@ 1 + src!
+	end
+
+	0 dest@ sb
+end
+
+procedure atoi (* str -- n *)
+	auto str
+	str!
+
+	auto i
+	auto res
+	0 i!
+	0 res!
+	while (str@ i@ + gb 0 ~=)
+		res@ 10 *
+		str@ i@ + gb '0' -
+		+
+		res!
+
+		i@ 1 + i!
+	end
+	res@ return
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

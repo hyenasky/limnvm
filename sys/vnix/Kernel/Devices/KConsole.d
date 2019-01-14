@@ -1,17 +1,11 @@
 (* use ANTECEDENT char devices for boot messages *)
 
-var KConsoleOut 0
-var KConsoleIn 0
-
-const KVERBOSEOUT 1
-const KVERBOSEIN 2
-
 procedure KPutc (* c -- *)
-	KConsoleOut@ ACIPutChar
+	Putc
 end
 
 procedure KGetc (* -- c *)
-	KConsoleIn@ ACIGetChar
+	Getc
 	dup if (0xFFFF ==) drop ERR return end
 end
 
@@ -61,12 +55,6 @@ end
 
 procedure KConsoleInit (* -- *)
 	"KConsole: init\n" KPrintf
-
-	if ("-v" ArgsCheck)
-		KVERBOSEOUT KConsoleOut!
-		KVERBOSEIN KConsoleIn!
-		"!!! kernel messages printed prior to this one can be found in serial out !!!\nKConsole: verbose mode\n" KPrintf
-	end
 
 	"KConsole: init done\n" KPrintf
 end

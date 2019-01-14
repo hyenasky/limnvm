@@ -39,7 +39,7 @@ procedure AHDBPartitions (* id -- *)
 			0 pc!
 
 			auto offset
-			1 offset!
+			2 offset!
 
 			while (i@ 8 <)
 				auto ptr

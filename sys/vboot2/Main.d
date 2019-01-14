@@ -1,6 +1,8 @@
+#include "prim.s"
 #include "Runtime.d"
 #include "lib/List.d"
 #include "lib/Tree.d"
+#include "Console.d"
 #include "DeviceTree.d"
 #include "IDisk.d"
 #include "vnixfat.d"
@@ -10,6 +12,12 @@ asm preamble "
 .org 0x100000
 
 .ds ANTE
+.dl Entry
+
+Entry:
+
+sir.l _STACK_PTR, r4
+sir.l _STACK, r3
 
 ;r0 contains pointer to API
 call _PUSH
@@ -62,11 +70,7 @@ procedure Main (* ciptr bootdev args -- *)
 		return
 	end
 
-	CIPtr@ BootDevice@ BootPartition@ PartitionTable@ args@ asm "
-		call _POP
-		mov r4, r0
-		call _POP
-		mov r3, r0
+	CIPtr@ BootDevice@ args@ asm "
 		call _POP
 		mov r2, r0
 		call _POP

@@ -279,14 +279,13 @@ procedure MonitorCommandSetenv (* -- *)
 	MonitorParseWord name!
 
 	auto new
-	MonitorParseWord new!
+	MonitorLinePoint@ 1 + new!
 
 	new@ name@ NVRAMSetVar
 
 	new@ name@ " set %s = \"%s\"\n" Printf
 
 	name@ Free
-	new@ Free
 end
 
 procedure MonitorCommandPrintenv (* -- *)

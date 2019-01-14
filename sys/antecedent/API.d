@@ -3,12 +3,12 @@ table API
 	pointerof APIGetc
 	pointerof APIGets
 	pointerof APIPuts
-	pointerof APIPutx
-	pointerof APIPutn
 	pointerof APIDevTree
 	pointerof APIMalloc
 	pointerof APICalloc
 	pointerof APIFree
+	pointerof _PUSH
+	pointerof _POP
 endtable
 
 procedure APIMalloc
@@ -129,9 +129,12 @@ end
 procedure APIDevTree
 	DevTree@ asm "
 
+	li r1, DevCurrent
+
 	call _POP
 
 	;r0 - devtree
+	;r1 - devcurrent
 
 	"
 end

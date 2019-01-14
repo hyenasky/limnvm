@@ -81,18 +81,23 @@ procedure DevTreeWalk (* path -- node or 0 *)
 	cnode@
 end
 
+procedure DeviceParent (* -- *)
+	DevCurrent@@ DevStackPUSH
+	DevCurrent@@ TreeNodeParent DevCurrent@!
+end
+
 procedure DeviceSelectNode (* node -- *)
-	DevCurrent@ DevStackPUSH
-	DevCurrent!
+	DevCurrent@@ DevStackPUSH
+	DevCurrent@!
 end
 
 procedure DeviceSelect (* path -- *)
 	auto path
 	path!
 
-	DevCurrent@ DevStackPUSH
+	DevCurrent@@ DevStackPUSH
 
-	path@ DevTreeWalk DevCurrent!
+	path@ DevTreeWalk DevCurrent@!
 end
 
 procedure DeviceNNew (* -- node *)
@@ -110,13 +115,13 @@ end
 device tree as a child of the current device, sets
 itself as the new current device *)
 procedure DeviceNew (* -- *)
-	DevCurrent@ DevStackPUSH
+	DevCurrent@@ DevStackPUSH
 
-	DeviceNNew DevCurrent@ DevTree@ TreeInsertChild DevCurrent!
+	DeviceNNew DevCurrent@@ DevTree@ TreeInsertChild DevCurrent@!
 end
 
 procedure DSetName (* name -- *)
-	DevCurrent@ TreeNodeValue DeviceNode_Name + !
+	DevCurrent@@ TreeNodeValue DeviceNode_Name + !
 end
 
 procedure DAddMethod (* method name -- *)
@@ -202,23 +207,23 @@ procedure DCallMethod (* ... name -- ... ok? *)
 end
 
 procedure DeviceExit (* -- *)
-	DevStackPOP DevCurrent!
+	DevStackPOP DevCurrent@!
 end
 
 procedure DGetName (* -- name *)
-	DevCurrent@ TreeNodeValue DeviceNode_Name + @
+	DevCurrent@@ TreeNodeValue DeviceNode_Name + @
 end
 
 procedure DGetMethods (* -- methods *)
-	DevCurrent@ TreeNodeValue DeviceNode_Methods + @
+	DevCurrent@@ TreeNodeValue DeviceNode_Methods + @
 end
 
 procedure DGetProperties (* -- properties *)
-	DevCurrent@ TreeNodeValue DeviceNode_Properties + @
+	DevCurrent@@ TreeNodeValue DeviceNode_Properties + @
 end
 
-procedure DeviceInit (* root -- *)
-	dup DevTree! DevCurrent!
+procedure DeviceInit (* dcp root -- *)
+	DevCurrent! DevTree!
 
 	256 Calloc DevStack!
 end

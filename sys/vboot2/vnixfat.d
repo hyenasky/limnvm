@@ -36,7 +36,7 @@ struct VFSDirEnt
 endstruct
 
 procedure VFSInit (* -- *)
-	"VnF: Mounting filesystem\n" PutString
+	"VnF: Mounting filesystem\n" Printf
 
 	VFSSuperblockNumber VFSSuperblockCache IReadBlock
 
@@ -94,7 +94,7 @@ procedure VFSFileByName (* name -- entrypointer *)
 	auto i
 	0 i!
 	while (i@ 64 <)
-		if (i@ 64 * VFSRootCache + VFSDirEnt_name + name@ StringCompare)
+		if (i@ 64 * VFSRootCache + VFSDirEnt_name + name@ strcmp)
 			i@ 64 * VFSRootCache + return
 		end
 
