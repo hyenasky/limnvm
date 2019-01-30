@@ -5,7 +5,7 @@ _STACK_PTR:
 
 ;128 cells deep
 _STACK:
-	.dl 0
+	.bytes 512 0
 
 ;safe prims
 
@@ -13,24 +13,15 @@ _POP:
 	push rs
 	bclri rs, rs, 1
 
-	push r2
-	push r1
-
 	lri.l r0, _STACK_PTR
-	lrr.l r1, r0
-	lri.l r2, _STACK
-
-	cmpi r1, 0
+	cmpi r0, 0
 	be _UNDERFLOW
 
-	subi r1, r1, 4
-	srr.l r0, r1
+	subi r0, r0, 4
+	sir.l _STACK_PTR, r0
 
-	add r2, r1, r2
-	lrr.l r0, r2
-
-	pop r1
-	pop r2
+	addi r0, r0, _STACK
+	lrr.l r0, r0
 
 	pop rs
 	ret
@@ -39,29 +30,18 @@ _PUSH:
 	push rs
 	bclri rs, rs, 1
 
-	push r4
-
-	mov r4, r0
+	push r1
+	lri.l r1, _STACK_PTR
 
 	push r2
-	push r1
-
-	lri.l r0, _STACK_PTR
-	lrr.l r1, r0
-	lri.l r2, _STACK
-
-	push r3
-	addi r3, r1, 4
-	srr.l r0, r3
-	pop r3
-
-	add r2, r2, r1
-	srr.l r2, r4
-
-	pop r1
+	addi r2, r1, 4
+	sir.l _STACK_PTR, r2
 	pop r2
 
-	pop r4
+	addi r1, r1, _STACK
+	srr.l r1, r0
+
+	pop r1
 
 	pop rs
 	ret

@@ -12,6 +12,8 @@ function blitter.new(vm, c)
 	local writeByte = mmu.TstoreByte
 	local readByte = mmu.TfetchByte
 
+	local copy = mmu.copy
+
 	local int = c.cpu.int
 
 	local port0 = 0
@@ -36,6 +38,8 @@ function blitter.new(vm, c)
 
 			local mf = band(modulo, 0xFFFF)
 			local md = rshift(modulo, 16)
+
+			--local t = love.timer.getTime()
 
 			if v == 1 then -- COPY
 				for r = 0, h-1 do
@@ -126,6 +130,8 @@ function blitter.new(vm, c)
 					dest = dest + md
 				end
 			end
+
+			--print("blitter done in "..tostring(love.timer.getTime() - t).." seconds")
 
 			int(0x40)
 		else

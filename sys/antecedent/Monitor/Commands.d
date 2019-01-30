@@ -21,11 +21,6 @@ procedure MonitorCommandsInit (* -- *)
 	"dumpheap"
 	MonitorAddCommand
 
-	"Enter menu."
-	pointerof MonitorCommandMenu
-	"menu"
-	MonitorAddCommand
-
 	"[dev] List children of device."
 	pointerof MonitorCommandLs
 	"ls"
@@ -105,6 +100,49 @@ procedure MonitorCommandsInit (* -- *)
 	pointerof MonitorCommandNVReset
 	"nvreset"
 	MonitorAddCommand
+
+	"Uptime in milliseconds."
+	pointerof MonitorCommandUptime
+	"uptime"
+	MonitorAddCommand
+
+	"[time in ms] Wait."
+	pointerof MonitorCommandWait
+	"wait"
+	MonitorAddCommand
+end
+
+procedure MonitorCommandWait (* -- *)
+	auto clock
+	"/clock" DevTreeWalk clock!
+
+	if (clock@ 0 ==)
+		" no clock!\n" Printf
+		return
+	end
+
+	clock@ DeviceSelectNode
+		auto ms
+		MonitorParseWord ms!
+
+		ms@ atoi "wait" DCallMethod drop
+
+		ms@ Free
+	DeviceExit
+end
+
+procedure MonitorCommandUptime (* -- *)
+	auto clock
+	"/clock" DevTreeWalk clock!
+
+	if (clock@ 0 ==)
+		" no clock!\n" Printf
+		return
+	end
+
+	clock@ DeviceSelectNode
+		"uptime" DCallMethod drop " uptime (ms): %d\n" Printf
+	DeviceExit
 end
 
 procedure MonitorCommandHinv (* -- *)
@@ -301,14 +339,12 @@ procedure MonitorCommandPrintenv (* -- *)
 	word@ Free
 end
 
-procedure MonitorCommandLs (* -- *)
+procedure MonitorLsH (* tabs dev -- *)
 	auto dev
-	MonitorParseDevPath dev!
-	if (dev@ 0 ==) return end
+	dev!
 
-	dev@ DeviceSelectNode
-		DGetName " child listing for %s:\n" Printf
-	DeviceExit
+	auto tabs
+	tabs!
 
 	auto tnc
 	dev@ TreeNodeChildren tnc!
@@ -320,12 +356,33 @@ procedure MonitorCommandLs (* -- *)
 		auto pnode
 		n@ ListNodeValue pnode!
 
-		pnode@ TreeNodeValue DeviceNode_Name + @ n@ "\t%x\t%s/\n" Printf
+		n@ "\t%x:" Printf
+
+		auto i
+		0 i!
+		while (i@ tabs@ <)
+			"  " Puts
+			i@ 1 + i!
+		end
+
+		n@ pnode@ TreeNodeValue DeviceNode_Name + @ "/%s\n" Printf
+
+		tabs@ 1 + pnode@ MonitorLsH
 
 		n@ ListNode_Next + @ n!
 	end
+end
 
-	'\n' Putc
+procedure MonitorCommandLs (* -- *)
+	auto dev
+	MonitorParseDevPath dev!
+	if (dev@ 0 ==) return end
+
+	dev@ DeviceSelectNode
+		DGetName " %s:\n" Printf
+	DeviceExit
+
+	1 dev@ MonitorLsH
 end
 
 procedure MonitorCommandDumpHeap (* -- *)
@@ -357,11 +414,6 @@ procedure BannerPrint (* ... -- *)
 	Printf
 end
 
-procedure MonitorCommandMenu (* -- *)
-	MonitorExit
-	Menu
-end
-
 procedure MonitorCommandBanner (* -- *)
 	'\n' dup Putc Putc
 	
@@ -379,5 +431,5 @@ procedure MonitorCommandBanner (* -- *)
 	DeviceExit
 
 	'\n' Putc
-	" Type 'help'.\n" Printf
+	" Type 'help' for commands, or 'exit' to return from the monitor.\n" Printf
 end

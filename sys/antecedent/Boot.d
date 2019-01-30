@@ -21,6 +21,7 @@ table BootErrors
 	"invalid boot record"
 	"aborted while loading boot blocks"
 	"bad boot blocks"
+	"no such device"
 endtable
 
 procedure AutoBoot (* -- ok? *)
@@ -34,7 +35,7 @@ procedure AutoBoot (* -- ok? *)
 	DevTreeWalk bootnode!
 
 	if (bootnode@ 0 ==)
-		2 return
+		7 return
 	end
 
 	bootnode@

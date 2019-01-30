@@ -2,18 +2,14 @@ var PMMTotalMemory 0
 var PMMTotalPages 0
 
 procedure PMMInit (* -- *)
-	"PMM: init\n" KPrintf
-
 	MmuTotalMemory dup PMMTotalMemory!
 	4096 / PMMTotalPages!
 
-	PMMTotalPages@ "PMM: managing %d pages.\n" KPrintf
+	PMMTotalPages@ "managing %d pages\n" KPrintf
 
 	if (PMMTotalPages@ 32768 >)
 		"can't manage more than 32768 pages (128MB of memory)\n" KPanic
 	end
-
-	"PMM: init done\n" KPrintf
 end
 
 buffer PMMBitmap 4096 (* we can deal with up to 128MB of physical memory, this is arbitrarily picked *)

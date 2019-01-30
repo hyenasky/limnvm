@@ -28,6 +28,7 @@ function computer.new(vm, memsize)
 	c.gpu = require("limn/kinnow").new(vm, c)
 	c.serial = require("limn/serial").new(vm, c)
 	c.ahdb = require("limn/ahdb").new(vm, c)
+	c.clock = require("limn/clock").new(vm, c)
 
 	-- amanatsu
 	local amtsu = c.abus

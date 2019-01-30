@@ -1,5 +1,6 @@
 #include "devtree/Citron.d"
 #include "devtree/MMU.d"
+#include "devtree/clock/Clock.d"
 #include "devtree/screen/Screen.d"
 #include "devtree/serial/Serial.d"
 #include "devtree/amanatsu/Amanatsu.d"
@@ -8,6 +9,7 @@
 
 procedure BuildTree (* -- *)
 	BuildMMU
+	BuildClock
 	BuildScreen
 	BuildSerial
 	BuildAmanatsu

@@ -1,17 +1,14 @@
 #include "Const.d"
 #include "Start.d"
 #include "Runtime.d"
-#include "lib/List.d"
-#include "lib/Tree.d"
 #include "Antecedent/ACI.d"
-#include "Antecedent/DeviceTree.d"
+#include "KConsole.d"
 #include "KPrint.d"
 #include "PMM.d"
 #include "KHeap.d"
 #include "Interrupts.d"
-#include "Devices.d"
-#include "Task.d"
 #include "Args.d"
+#include "Devices.d"
 
 #include "Extra/Bootsplash.d"
 
@@ -34,14 +31,10 @@ procedure Main (* ciptr bootdev args -- *)
 	InterruptsInit
 	args@ ArgsInit
 	KConsoleInit
-	DevInit
 
-	APIDevTree DeviceTreeInit
+	DevicesInit
 
-	GraphicsInit
 	Bootsplash
-
-	TaskInit
 
 	ReturnToFirmware
 end

@@ -48,7 +48,7 @@ _CIC_PUSH === 32
 _CIC_POP === 36
 
 ; v --
-ANTEPush:
+ACIPush:
 	push r30
 
 	call _POP
@@ -60,7 +60,7 @@ ANTEPush:
 	ret
 
 ; -- v
-ANTEPop:
+ACIPop:
 	push r30
 
 	li r30, _CIC_POP
@@ -72,7 +72,7 @@ ANTEPop:
 	ret
 
 ; string --
-Puts:
+ACIPuts:
 	push r30
 
 	call _POP
@@ -84,7 +84,7 @@ Puts:
 	ret
 
 ; buffer maxchars --
-Gets:
+ACIGets:
 	push r30
 
 	call _POP
@@ -99,7 +99,7 @@ Gets:
 	ret
 
 ; char -- 
-Putc:
+ACIPutc:
 	push r30
 
 	call _POP
@@ -111,7 +111,7 @@ Putc:
 	ret
 
 ; -- char
-Getc:
+ACIGetc:
 	push r30
 
 	call _POP
@@ -125,7 +125,7 @@ Getc:
 	ret
 
 ; -- root dcp
-APIDevTree:
+ACIDevTree:
 	push r30
 
 	li r30, _CIC_DevTree
@@ -140,7 +140,7 @@ APIDevTree:
 	ret
 
 ; sz -- ptr
-Malloc:
+ACIMalloc:
 	push r30
 
 	call _POP
@@ -154,7 +154,7 @@ Malloc:
 	ret
 
 ; sz -- ptr
-Calloc:
+ACICalloc:
 	push r30
 
 	call _POP
@@ -168,7 +168,7 @@ Calloc:
 	ret
 
 ; ptr -- 
-Free:
+ACIFree:
 	push r30
 
 	call _POP

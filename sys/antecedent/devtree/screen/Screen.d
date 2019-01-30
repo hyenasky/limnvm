@@ -13,13 +13,23 @@ const ScreenGPUVsync 0x3
 const ScreenGPUScroll 0x4
 const ScreenGPUWindow 0x6
 
+var ScreenWidth 0
+var ScreenHeight 0
+
 var ScreenVsyncList 0
 
+var ScreenNeedsInit 1
+
 procedure ScreenInfo (* -- w h *)
+	auto rs
+	InterruptDisable rs!
+
 	ScreenGPUInfo ScreenGPUCmdPort DCitronCommand
 	
 	ScreenGPUPortB DCitronIni
-	ScreenGPUPortA DCitronIni 
+	ScreenGPUPortA DCitronIni
+
+	rs@ InterruptRestore
 end
 
 procedure BuildScreen (* -- *)
@@ -42,6 +52,7 @@ procedure BuildScreen (* -- *)
 		pointerof ScreenScroll "scroll" DAddMethod
 		pointerof ScreenWindow "window" DAddMethod
 		pointerof ScreenVsyncAdd "vsyncAdd" DAddMethod
+		pointerof ScreenInit "init" DAddMethod
 	DeviceExit
 
 	if ("screen-bg" NVRAMGetVar 0 ==)
@@ -51,9 +62,20 @@ procedure BuildScreen (* -- *)
 		0x00 "screen-fg" NVRAMSetVarNum
 	end
 
+	w@ ScreenWidth!
+	h@ ScreenHeight!
+
 	ListCreate ScreenVsyncList!
 
 	ScreenVsyncOn
+end
+
+procedure ScreenInit (* -- *)
+	if (ScreenNeedsInit@)
+		"screen-bg" NVRAMGetVarNum ScreenWidth@ ScreenHeight@ 0 0 ScreenRectangle
+
+		0 ScreenNeedsInit!
+	end
 end
 
 procedure ScreenWindow (* x y w h -- *)

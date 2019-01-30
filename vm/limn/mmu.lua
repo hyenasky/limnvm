@@ -67,6 +67,81 @@ function mmu.new(vm, c, memsize)
 	end
 	local unmapArea = m.unmapArea
 
+	local function copyPhPh(a1,a2,len)
+		a1 = a1 - physstart
+		a2 = a2 - physstart
+
+		for i = 0, len-1 do
+			physmem[a1 + i] = physmem[a2 + i]
+		end
+	end
+
+	local function copyPhSp(a1,a2,len,h)
+		a1 = a1 - physstart
+		a2 = band(a2, 0x1FFFF)
+
+		for i = 0, len-1 do
+			physmem[a1 + i] = h(0, 0, a2 + i)
+		end
+	end
+
+	local function copySpPh(a1,a2,len,h)
+		a1 = band(a1, 0x1FFFF)
+		a2 = a2 - physstart
+
+		for i = 0, len-1 do
+			h(0, 1, a1 + i, physmem[a2 + i])
+		end
+	end
+
+	local function copySpSp(a1,a2,len,h1,h2)
+		a1 = band(a1, 0x1FFFF)
+		a2 = band(a2, 0x1FFFF)
+
+		for i = 0, len-1 do
+			h(0, 1, a1 + i, h(0, 0, a2 + i))
+		end
+	end
+
+	local whL = {
+		copyPhPh,
+		copyPhSp,
+		copySpPh,
+		copySpSp,
+	}
+
+	function m.copy(a1,a2,len)
+		local e = 0
+
+		local h1
+		local h2
+
+		local m1 = areas[rshift(a1, 17)]
+
+		if m1 ~= 0 then -- mapped
+			h1 = areah[m1]
+			e = bor(e, 1)
+		else -- physmem
+			if not ((physstart <= a1) and (physend >= a1)) then
+				return
+			end
+		end
+
+		local m2 = areas[rshift(a2, 17)]
+
+		if m2 ~= 0 then -- mapped
+			h2 = areah[m2]
+			e = bor(e, 2)
+		else -- physmem
+			if not ((physstart <= a2) and (physend >= a2)) then
+				return
+			end
+		end
+
+		whL[e](a1,a2,len,h1,h2)
+	end
+	local copy = m.copy
+
 	--translated address space functions:
 	--post-paging translation addresses
 	--physmem starts at 0 in the translated address space

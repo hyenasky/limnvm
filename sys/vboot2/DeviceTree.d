@@ -222,7 +222,7 @@ procedure DGetProperties (* -- properties *)
 	DevCurrent@@ TreeNodeValue DeviceNode_Properties + @
 end
 
-procedure DeviceInit (* dcp root -- *)
+procedure DeviceInit (* root dcp -- *)
 	DevCurrent! DevTree!
 
 	256 Calloc DevStack!

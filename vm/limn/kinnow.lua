@@ -1,4 +1,5 @@
--- implements a simple 8-bit color, 1120x832 framebuffer, with simple 2d acceleration
+-- implements a simple 8-bit color, variable-resolution framebuffer, with simple 2d acceleration
+-- can make use of up to 2MB of VRAM
 
 local lshift, rshift, tohex, arshift, band, bxor, bor, bnot, bror, brol =
 	lshift, rshift, tohex, arshift, band, bxor, bor, bnot, bror, brol

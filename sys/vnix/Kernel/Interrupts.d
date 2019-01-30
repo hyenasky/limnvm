@@ -1,7 +1,7 @@
 buffer InterruptsVT 1024
 
 procedure InterruptsInit (* -- *)
-	"Interrupts: init\n" KPrintf
+	"init interrupts\n" KPrintf
 
 	SaveFirmwareInterrupts
 
@@ -32,9 +32,7 @@ procedure InterruptsInit (* -- *)
 
 	"
 
-	InterruptsVT oivt@ "Interrupts: old IVT at 0x%x, new IVT at 0x%x\n" KPrintf
-
-	"Interrupts: init done\n" KPrintf
+	InterruptsVT oivt@ "old IVT at 0x%x, new IVT at 0x%x\n" KPrintf
 end
 
 procedure InterruptRegister (* handler num -- *)

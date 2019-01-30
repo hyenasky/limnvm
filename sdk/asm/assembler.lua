@@ -372,6 +372,10 @@ local function pass5(lines, sym) --generate binary
 
 			local rands = e[3] -- the names 'rand, operand
 
+			if #tt-1 ~= #rands then
+				error("Operand count mismatch on a "..tt[1])
+			end
+
 			for k,v in ipairs(rands) do
 				if v == 1 then
 					out = out..string.char(tt[k+1])

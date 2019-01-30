@@ -656,11 +656,13 @@ function cpu.new(vm, c)
 			if kernelMode() then
 				local htta = reg[36]
 
-				for i = 0, 35 do
+				for i = 0, 37 do
 					if i == 34 then
 						fillState(TfetchLong(htta+(34*4)))
 					else
-						reg[i] = TfetchLong(htta+(i*4))
+						if (i ~= 36) and (i ~= 33) then
+							reg[i] = TfetchLong(htta+(i*4))
+						end
 					end
 				end
 
@@ -680,7 +682,7 @@ function cpu.new(vm, c)
 				local n0 = pop()
 				local npc = pop()
 
-				for i = 0, 35 do
+				for i = 0, 37 do
 					TstoreLong(htta+(i*4), reg[i])
 				end
 

@@ -84,18 +84,8 @@ procedure GConsoleLongestLine (* -- width *)
 end
 
 procedure GConsoleClear (* -- *)
-	auto ll
-	GConsoleLongestLine ll!
-
-	auto wc
-	if (ll@ 0 ==)
-		GCGWidth@ wc!
-	end else
-		ll@ GConsoleFontWidth * wc!
-	end
-
 	GCScreenNode@ DeviceSelectNode
-		GCColorBG@ wc@ GCGHeight@ 0 0 "rectangle" DCallMethod drop
+		GCColorBG@ GConsoleLongestLine GConsoleFontWidth * GCGHeight@ 0 0 "rectangle" DCallMethod drop
 	DeviceExit
 
 	0 GCCurX!
@@ -186,7 +176,9 @@ procedure GConsoleBack (* -- *)
 end
 
 procedure GConsoleInit (* -- *)
-	GConsoleClear
+	GCScreenNode@ DeviceSelectNode
+		"init" DCallMethod drop
+	DeviceExit
 end
 
 procedure GConsoleTab (* -- *)

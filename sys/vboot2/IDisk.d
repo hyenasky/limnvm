@@ -12,6 +12,6 @@ procedure IReadBlock (* block buffer -- *)
 	block!
 
 	IDiskBD@ DeviceSelectNode
-		buf@ block@ "readBlock" DCallMethod drop drop
+		buf@ ANTEPush block@ ANTEPush "readBlock" DCallMethod drop ANTEPop drop
 	DeviceExit
 end

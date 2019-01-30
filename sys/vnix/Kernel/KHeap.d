@@ -14,15 +14,11 @@ struct KHeapHeader
 endstruct
 
 procedure KHeapInit (* -- *)
-	"KHeap: init\n" KPrintf
-
 	KHeapSize@ KHeapStart@ KHeapHeader_size + !
 	0 KHeapStart@ KHeapHeader_last + !
 	0 KHeapStart@ KHeapHeader_allocated + !
 
-	KHeapStart@ KHeapSize@ "KHeap: heap is %d bytes starting at 0x%x\n" KPrintf
-
-	"KHeap: init done\n" KPrintf
+	KHeapStart@ KHeapSize@ "heap is %d bytes starting at 0x%x\n" KPrintf
 end
 
 (* for debugging *)
@@ -66,11 +62,15 @@ end
 (* first-fit *)
 
 procedure KMalloc (* sz -- ptr *)
+
+	auto rs
+	InterruptDisable rs!
+
 	auto sz
 	sz!
 
 	if (sz@ 0 ==)
-		0 return
+		0 rs@ InterruptRestore return
 	end
 
 	auto big
@@ -99,7 +99,11 @@ procedure KMalloc (* sz -- ptr *)
 
 				if (big@ 1 + size@ ==) (* just the right size *)
 					ept@ KHeapHeader_allocated + 1 sb
-					ept@ KHeapHeader_SIZEOF + return
+					ept@ KHeapHeader_SIZEOF +
+
+					rs@ InterruptRestore
+
+					return
 				end
 
 				(*
@@ -122,12 +126,18 @@ procedure KMalloc (* sz -- ptr *)
 				end
 
 				1 ept@ KHeapHeader_allocated + sb
-				ept@ KHeapHeader_SIZEOF + return
+				ept@ KHeapHeader_SIZEOF +
+
+				rs@ InterruptRestore
+
+				return
 			end
 		end
 
 		ept@ size@ + ept!
 	end
+
+	rs@ InterruptRestore
 
 	ERR return (* no space big enough *)
 end
@@ -150,6 +160,9 @@ procedure KCalloc (* sz -- ptr *)
 end
 
 procedure KHeapMerge (* ptr msize -- *)
+	auto rs
+	InterruptDisable rs!
+
 	auto msize
 	msize!
 	auto ptr
@@ -180,6 +193,9 @@ procedure KHeapMerge (* ptr msize -- *)
 			end
 
 			last@ ns@ KHeapMerge (* recursion *)
+
+			rs@ InterruptRestore
+
 			return
 		end
 	end
@@ -204,9 +220,14 @@ procedure KHeapMerge (* ptr msize -- *)
 			ptr@ ns@ KHeapMerge (* recursion *)
 		end
 	end
+
+	rs@ InterruptRestore
 end
 
 procedure KFree (* ptr -- *)
+	auto rs
+	InterruptDisable rs!
+
 	auto ptr
 	ptr!
 
@@ -219,6 +240,8 @@ procedure KFree (* ptr -- *)
 	nptr@ KHeapHeader_size + @ msize!
 
 	nptr@ msize@ KHeapMerge
+
+	rs@ InterruptRestore
 end
 
 

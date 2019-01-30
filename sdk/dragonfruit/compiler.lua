@@ -556,7 +556,7 @@ local directives = {
 			return
 		end
 
-		stream:insert(f:read("*a"))
+		stream:insert(f:read("*a").."\n")
 
 		f:close()
 	end,

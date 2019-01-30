@@ -16,9 +16,6 @@ asm preamble "
 
 Entry:
 
-sir.l _STACK_PTR, r4
-sir.l _STACK, r3
-
 ;r0 contains pointer to API
 call _PUSH
 

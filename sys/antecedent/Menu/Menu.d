@@ -49,7 +49,8 @@ procedure Menu (* -- *)
 			"width" DGetProperty MenuGWidth!
 			"height" DGetProperty MenuGHeight!
 
-			"screen-bg" NVRAMGetVarNum MenuGWidth@ MenuGHeight@ 0 0 "rectangle" DCallMethod drop
+			"init" DCallMethod drop
+
 			pointerof MenuVsyncCallback "vsyncAdd" DCallMethod drop
 		DeviceExit
 
@@ -115,6 +116,8 @@ end
 procedure MenuButtonConsole (* -- *)
 	0 MenuActive!
 
+	MenuCursorX@ MenuCursorY@ MenuClearCursor
+
 	auto kbdnode
 
 	"menu-kbd" NVRAMGetVar dup if (0 ==)
@@ -132,21 +135,25 @@ procedure MenuButtonConsole (* -- *)
 
 	Monitor
 
+	MenuDrawButtons
+
+	MenuCursorX@ MenuCursorY@ MenuDrawCursor
+
 	1 MenuActive!
 end
 
 procedure MenuButtonBoot (* -- *)
 	0 MenuActive!
 
-	MenuScreenNode@ DeviceSelectNode
-		"screen-bg" NVRAMGetVarNum MenuGWidth@ MenuGHeight@ 0 0 "rectangle" DCallMethod drop
-	DeviceExit
+	MenuCursorX@ MenuCursorY@ MenuClearCursor
 
 	[AutoBoot]BootErrors@ " boot: %s\n" Printf
 
-	Monitor
+	MenuDrawButtons
 
-	Reset
+	MenuCursorX@ MenuCursorY@ MenuDrawCursor
+
+	1 MenuActive!
 end
 
 struct MenuButton
@@ -410,7 +417,7 @@ procedure MenuDrawButtonIcon (* icon x y -- *)
 end
 
 (* these loops have to be in asm cuz the dragonfruit compiler sucks
-and it cant run at 60fps otherwise *)
+and this cant run at 60fps otherwise *)
 
 procedure MenuClearCursor (* x y -- *)
 	auto y

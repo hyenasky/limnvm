@@ -13,9 +13,9 @@ VHD=./bin/hd0.img
 VNFS=./bin/vnixfs.img
 
 all:
-	make rom run
-#	make bkern
-#	$(EMU) -outs -rom $(ROMBIN) -ahd $(VHD) -nvram $(NVRAM) -nvram,autorun "b0 0 -v"
+#	make rom run
+	make bkern
+	$(EMU) -outs -rom $(ROMBIN) -ahd $(VHD) -nvram $(NVRAM)
 
 rom:
 	printf '%s' `expr \`cat $(ROMBUILD)\` + 1` > $(ROMBUILD)
