@@ -148,7 +148,26 @@ local iwords = {
 		local initv = stream:extract()
 
 		if initv[2] ~= "number" then
-			print("unexpected "..name[2].." at const")
+			if initv[2] ~= "string" then
+				print("unexpected "..name[2].." at const")
+			else
+				local s = out:newsym()
+				out.ds = out.ds .. "	.ds "
+				for i = 1, #initv[1] do
+					local c = initv[1]:sub(i,i)
+					if c == "\n" then
+						out.ds = out.ds .. "\n"
+						out:d("	.db 0xA")
+						out.ds = out.ds .. "	.ds "
+					else
+						out.ds = out.ds .. c
+					end
+				end
+				out:d("")
+				out:d("	.db 0x0")
+
+				initv[1] = out:syms(s)
+			end
 		end
 
 		out:newconst(name[1], initv[1])

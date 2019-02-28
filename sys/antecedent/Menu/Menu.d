@@ -21,6 +21,8 @@ var MenuMouseR 0
 
 var MenuButtonList 0
 
+var MenuWaitVsync 0
+
 var MenuNeedsInit 1
 
 procedure Menu (* -- *)
@@ -104,8 +106,6 @@ MenuButtonResetBMP:
 "
 
 procedure MenuButtonReset (* -- *)
-	0 MenuActive!
-
 	MenuScreenNode@ DeviceSelectNode
 		0 MenuGWidth@ MenuGHeight@ 0 0 "rectangle" DCallMethod drop
 	DeviceExit
@@ -114,10 +114,6 @@ procedure MenuButtonReset (* -- *)
 end
 
 procedure MenuButtonConsole (* -- *)
-	0 MenuActive!
-
-	MenuCursorX@ MenuCursorY@ MenuClearCursor
-
 	auto kbdnode
 
 	"menu-kbd" NVRAMGetVar dup if (0 ==)
@@ -134,26 +130,12 @@ procedure MenuButtonConsole (* -- *)
 	"/gconsole" DevTreeWalk ConsoleOut!
 
 	Monitor
-
-	MenuDrawButtons
-
-	MenuCursorX@ MenuCursorY@ MenuDrawCursor
-
-	1 MenuActive!
 end
 
 procedure MenuButtonBoot (* -- *)
-	0 MenuActive!
-
-	MenuCursorX@ MenuCursorY@ MenuClearCursor
-
 	[AutoBoot]BootErrors@ " boot: %s\n" Printf
 
 	MenuDrawButtons
-
-	MenuCursorX@ MenuCursorY@ MenuDrawCursor
-
-	1 MenuActive!
 end
 
 struct MenuButton
@@ -184,7 +166,20 @@ procedure MenuDoButtons (* -- *)
 		button@ MenuButton_y + @ y!
 
 		if (cx@ x@ >= x@ 75 + cx@ >= && cy@ y@ >= && y@ 75 + cy@ >= &&)
+			0 MenuActive!
+			0 MenuWaitVsync!
+			while (MenuWaitVsync@ ~~) end
+
+			MenuCursorX@ MenuCursorY@ MenuClearCursor
+
 			button@ MenuButton_callback + @ Call
+
+			MenuDrawButtons
+
+			MenuCursorX@ MenuCursorY@ MenuDrawCursor
+
+			1 MenuActive!
+
 			return
 		end
 
@@ -269,7 +264,7 @@ procedure MenuDrawButton (* icon x y -- *)
 end
 
 procedure MenuVsyncCallback (* -- *)
-	if (MenuActive@ MenuModified@ &&)
+	if (MenuModified@)
 		MenuCursorOldX@ MenuCursorOldY@ MenuClearCursor
 		MenuCursorX@ MenuCursorY@ MenuDrawCursor
 
@@ -278,6 +273,8 @@ procedure MenuVsyncCallback (* -- *)
 
 		0 MenuModified!
 	end
+
+	1 MenuWaitVsync!
 end
 
 procedure MenuMouseReleased (* detail -- *)
@@ -301,7 +298,7 @@ procedure MenuMouseMoved (* detail -- *)
 	if (x@ 0x8000 & 0x8000 ~=)
 		MenuCursorX@ x@ + MenuCursorX!
 		if (MenuCursorX@ MenuCursorWidth + MenuGWidth@ >=)
-			MenuGWidth@ MenuCursorWidth 1 - - MenuCursorX!
+			MenuGWidth@ MenuCursorWidth - MenuCursorX!
 		end
 	end else
 		x@ 0x7FFF & uv!

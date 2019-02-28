@@ -85,7 +85,7 @@ end
 
 procedure GConsoleClear (* -- *)
 	GCScreenNode@ DeviceSelectNode
-		GCColorBG@ GConsoleLongestLine GConsoleFontWidth * GCGHeight@ 0 0 "rectangle" DCallMethod drop
+		GCColorBG@ GConsoleLongestLine GConsoleFontWidth * GCHeight@ GConsoleFontHeight * 0 0 "rectangle" DCallMethod drop
 	DeviceExit
 
 	0 GCCurX!
@@ -103,7 +103,7 @@ procedure GConsoleScroll (* rows -- *)
 	InterruptDisable rs!
 
 	GCScreenNode@ DeviceSelectNode
-		0 0 GConsoleLongestLine GConsoleFontWidth * GCGHeight@ "window" DCallMethod drop
+		0 0 GConsoleLongestLine GConsoleFontWidth * GConsoleFontHeight GCHeight@ * "window" DCallMethod drop
 		GCColorBG@ rows@ GConsoleFontHeight * "scroll" DCallMethod drop
 		0 0 0 0 "window" DCallMethod drop
 	DeviceExit
@@ -157,9 +157,9 @@ procedure GConsoleNewline (* -- *)
 	GCCurY@ 1 + GCCurY!
 
 	if (GCCurY@ GCHeight@ >=)
-		1 GConsoleScroll
 		GCHeight@ 1 - GCCurY!
 		0 GCCurX!
+		1 GConsoleScroll
 	end
 end
 
@@ -201,13 +201,13 @@ procedure GConsoleSetColor (* -- *)
 		return
 	end
 
-	if (GCEV@ 512 <)
+	if (GCEV0@ 512 <)
 		GCColorBG@ GCColorOBG!
 		GCEV0@ 256 - GCColorBG!
 		return
 	end
 
-	if (GCEV@ 1024 ==)
+	if (GCEV0@ 1024 ==)
 		GCColorOBG@ GCColorBG!
 		GCColorOFG@ GCColorFG!
 		return
@@ -240,6 +240,8 @@ procedure GConsolePutChar (* char -- *)
 
 	if (char@ 0x1b ==)
 		pointerof GCEV0 GCEV!
+		0 GCEV0!
+		0 GCEV1!
 		1 GCEscape!
 		return
 	end
@@ -303,6 +305,9 @@ GCGPPStub:
 ;r3 - color
 ;draw bitmap character at specified location on screen
 GConsoleDrawCharASM:
+	cmpi r0, 0x20 ;dont draw if space
+	be .spout
+
 	;push r3 ;use r3 as y iterator
 	push r4 ;use r4 as x iterator
 	push r5 ;use r5 to store ptr to current byte in font to look at
@@ -375,6 +380,8 @@ GConsoleDrawCharASM:
 	pop r6
 	pop r5
 	pop r4
+
+.spout:
 	ret
 
 "

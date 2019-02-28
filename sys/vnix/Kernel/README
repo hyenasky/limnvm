@@ -1,3 +1,0 @@
-This is the source code for the kernel for the vnix operating system.
-
-It targets the LIMN architecture and makes use of Antecedent firmware calls during the boot process.

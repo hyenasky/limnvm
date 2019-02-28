@@ -416,7 +416,7 @@ end
 
 procedure MonitorCommandBanner (* -- *)
 	'\n' dup Putc Putc
-	
+
 	"/" DeviceSelect
 		"boot firmware up\n" BannerPrint
 		"author" DGetProperty "version" DGetProperty DGetName "Implementation details: %s %s written by %s\n" BannerPrint

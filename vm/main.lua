@@ -33,6 +33,7 @@ vm.cb.wheelmoved = {}
 vm.cb.textinput = {}
 vm.cb.filedropped = {}
 vm.cb.quit = {}
+vm.drawable = {}
 
 function vm.registerCallback(t, cb)
 	local t = vm.cb[t]

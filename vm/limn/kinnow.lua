@@ -184,8 +184,8 @@ function gpu.new(vm, c)
 		windowY = y
 		windowW = w
 		windowH = h
-		windowX1 = x+w-1
-		windowY1 = y+h-1
+		windowX1 = x+w
+		windowY1 = y+h
 	end
 
 	local function action(s, offset, v, d)
@@ -242,8 +242,8 @@ function gpu.new(vm, c)
 
 			local wrx,wry = rx+windowX, ry+windowY
 
-			for x = wrx, rw+wrx do
-				for y = wry, rh+wry do
+			for x = wrx, rw+wrx-1 do
+				for y = wry, rh+wry-1 do
 					framebuffer[y * width + x] = v
 				end
 			end
@@ -420,7 +420,7 @@ function gpu.new(vm, c)
 			end
 
 			love.graphics.setColor(1,1,1,1)
-			love.graphics.draw(image)
+			love.graphics.draw(image, x, y, 0, s, s)
 
 			if g.vsync then
 				int(0x35)

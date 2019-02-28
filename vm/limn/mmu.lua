@@ -22,7 +22,7 @@ function mmu.new(vm, c, memsize)
 	m.physstart = 0
 	local physstart = m.physstart
 
-	m.physend = physstart + memsize
+	m.physend = physstart + memsize - 1
 	local physend = m.physend
 
 	m.translating = false

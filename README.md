@@ -11,6 +11,7 @@ The CPU is based around the second iteration of my toy architecture.
 Ships with a pre-built boot ROM binary, a disktools image (see *Using the toolchain*), and a vnix image.
 
 ![Running the Antecedent boot firmware](https://i.imgur.com/lHf2gbu.png)
+
 ## Running
 
 Modify the `./love` shell script to point to your Love2D 11.0 executable.
@@ -53,7 +54,7 @@ Lets you partition disks under the Vnix scheme. Vnix won't boot off a disk whose
 
 This tool is unique in that it's bootable and runs in the vm itself as an Antecedent client program.
 
-Under the default configuration, it exists on block device 0,0. Type `b0 0` or just `b` at the Antecedent prompt to boot it.
+Under the default configuration, it exists on block device 0,0. Type `b0 0` or just `b` at the (legacy) Antecedent prompt to boot it.
 
 ## Things left to do
 

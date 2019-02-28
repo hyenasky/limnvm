@@ -1,5 +1,9 @@
+;very low-level reset code for limn cpu, reset vector specified in ROMHeader.s points to Reset routine
+;special purpose registers are reset, the ROM is copied into RAM, and the main firmware procedure is called
+
 Reset:
 	li rs, 0
+	li ivt, 0
 	li sp, 0x1FFF
 	call LLFWShadow
 	call AntecedentEntry
