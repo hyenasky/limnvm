@@ -1,7 +1,7 @@
 #include "devtree/Tree.d"
 
 procedure DevRootBuild (* -- *)
-	"antecedent" DSetName
+	"antecedent-ebus" DSetName
 	"3.0" "version" DAddProperty
 	"Ash" "author" DAddProperty
 	pointerof ANTEBNS "build" DAddProperty

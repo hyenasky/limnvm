@@ -23,6 +23,12 @@ procedure HeapDump (* -- *)
 	auto max
 	KHeapStart@ KHeapSize@ + max!
 
+	auto tfree
+	0 tfree!
+
+	auto talloc
+	0 talloc!
+
 	auto i
 	0 i!
 
@@ -45,12 +51,18 @@ procedure HeapDump (* -- *)
 		last@ "	last: 0x%x\n" Printf
 		alloc@ "	allocated: %d\n" Printf
 
+		if (alloc@ 1 ==)
+			talloc@ size@ + talloc!
+		end else
+			tfree@ size@ + tfree!
+		end
+
 		stotal@ size@ + stotal!
 		ept@ size@ + ept!
 		i@ 1 + i!
 	end
 
-	stotal@ "heap size: 0x%x bytes.\n" Printf
+	tfree@ talloc@ stotal@ "heap size: 0x%x bytes.\n%d bytes taken, %d bytes free.\n" Printf
 end
 
 (* first-fit *)
@@ -132,6 +144,10 @@ procedure Malloc (* sz -- ptr *)
 	end
 
 	rs@ InterruptRestore
+
+	HeapDump
+	"wow it happened\n" Printf
+	asm "hlt"
 
 	ERR return (* no space big enough *)
 end

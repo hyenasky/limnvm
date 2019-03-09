@@ -113,6 +113,22 @@ procedure DeviceNNew (* -- node *)
 	dnode@
 end
 
+procedure DeviceNNewOMP (* methodslist propertieslist -- node *)
+	auto pl
+	pl!
+	auto ml
+	ml!
+
+	auto dnode
+	DeviceNode_SIZEOF Calloc
+	dnode!
+
+	ml@ dnode@ DeviceNode_Methods + !
+	pl@ dnode@ DeviceNode_Properties + !
+
+	dnode@
+end
+
 (* creates a new unnamed device node, adds it to the
 device tree as a child of the current device, sets
 itself as the new current device *)
@@ -120,6 +136,30 @@ procedure DeviceNew (* -- *)
 	DevCurrent@ DevStackPUSH
 
 	DeviceNNew DevCurrent@ DevTree@ TreeInsertChild DevCurrent!
+end
+
+procedure DeviceClone (* node -- *)
+	DevCurrent@ DevStackPUSH
+
+	auto node
+	node!
+
+	auto ml
+	node@ TreeNodeValue DeviceNode_Methods + @ ml!
+
+	auto pl
+	node@ TreeNodeValue DeviceNode_Properties + @ pl!
+
+	ml@ pl@ DeviceNNewOMP DevCurrent@ DevTree@ TreeInsertChild DevCurrent!
+end
+
+procedure DeviceCloneWalk (* path -- *)
+	auto dn
+	DevTreeWalk dn!
+
+	if (dn@ 0 ~=)
+		dn@ DeviceClone
+	end
 end
 
 procedure DSetName (* name -- *)

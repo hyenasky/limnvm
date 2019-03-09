@@ -4,7 +4,7 @@ procedure Main (* -- *)
 		"false"
 	end
 
-	if ("true" strcmp ~~ )
+	if ("true" strcmp ~~)
 		Menu
 	end
 

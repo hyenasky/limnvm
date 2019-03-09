@@ -35,12 +35,7 @@ procedure Menu (* -- *)
 
 		auto mousenode
 
-		"menu-mouse" NVRAMGetVar dup if (0 ==)
-			drop "/amanatsu/mouse/0" "menu-mouse" NVRAMSetVar
-			"/amanatsu/mouse/0"
-		end
-
-		DevTreeWalk mousenode!
+		"/mouse" DevTreeWalk mousenode!
 
 		if (mousenode@ 0 ==)
 			return
@@ -114,20 +109,7 @@ procedure MenuButtonReset (* -- *)
 end
 
 procedure MenuButtonConsole (* -- *)
-	auto kbdnode
-
-	"menu-kbd" NVRAMGetVar dup if (0 ==)
-		drop "/amanatsu/kbd/0" "menu-kbd" NVRAMSetVar
-		"/amanatsu/kbd/0"
-	end
-
-	DevTreeWalk kbdnode!
-
-	if (kbdnode@ 0 ~=)
-		kbdnode@ ConsoleIn!
-	end
-
-	"/gconsole" DevTreeWalk ConsoleOut!
+	ConsoleUserOut
 
 	Monitor
 end

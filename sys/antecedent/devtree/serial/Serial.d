@@ -1,41 +1,30 @@
-const SerialCmdPort 0x10
-const SerialDataPort 0x11
+(* platform independent serial interface, antecedent standard *)
 
-const SerialCmdWrite 1
-const SerialCmdRead 2
+var SSerialNode 0
 
-procedure BuildSerial (* -- *)
-	DeviceNew
-		"serial" DSetName
-
-		pointerof SerialWrite "write" DAddMethod
-		pointerof SerialRead "read" DAddMethod
-	DeviceExit
-end
-
-procedure SerialWrite (* c -- *)
-	auto rs
-	InterruptDisable rs!
-
-	SerialDataPort DCitronOutb
-	SerialCmdWrite SerialCmdPort DCitronCommand
-
-	rs@ InterruptRestore
-end
-
-procedure SerialRead (* -- c *)
-	auto rs
-	InterruptDisable rs!
-
-	auto c
-	SerialCmdRead SerialCmdPort DCitronCommand
-	SerialDataPort DCitronInb c!
-
-	rs@ InterruptRestore
-
-	if (c@ 0xFFFF ==)
-		ERR return
+procedure GSerialDefault (* -- defaultnode *)
+	"serial-dev" NVRAMGetVar dup if (0 ==)
+		drop "/ebus/platformboard/citron/serial" "serial-dev" NVRAMSetVar
+		"/ebus/platformboard/citron/serial"
 	end
 
-	c@
+	auto dn
+	DevTreeWalk dn!
+
+	if (dn@ 0 ==)
+		"/ebus/platformboard/citron/serial" "serial-dev" NVRAMSetVar
+		"/ebus/platformboard/citron/serial" DevTreeWalk dn!
+	end
+
+	dn@
+end
+
+procedure BuildSerial (* -- *)
+	GSerialDefault SSerialNode!
+
+	if (SSerialNode@ 0 ~=)
+		SSerialNode@ DeviceClone
+			"serial" DSetName
+		DeviceExit
+	end
 end

@@ -1,7 +1,8 @@
-ASM=./asm
-DRAGONC=./dragonc
+ASM=./asm.sh
+DRAGONC=./dragonc.sh
+VFUTIL=./vfu.sh
 
-EMU=./love ./vm
+EMU=./love.sh ./vm
 
 ROM=./sys/antecedent/Antecedent.d
 ROMBIN=./bin/boot.bin
@@ -10,27 +11,29 @@ ROMBUILD=./sys/antecedent/build
 NVRAM=./bin/nvram
 
 VHD=./bin/hd0.img
-VNFS=./bin/vnixfs.img
+VNFS=./bin/kabosufs.img
 
 all:
-#	make rom run
-	make bkern
-	$(EMU) -outs -rom $(ROMBIN) -ahd $(VHD) -nvram $(NVRAM)
+	# make bkern
+	make run
 
 rom:
 	printf '%s' `expr \`cat $(ROMBUILD)\` + 1` > $(ROMBUILD)
 	$(DRAGONC) $(ROM) $(ROMBIN) -noprim
 
 run:
-	$(EMU) -rom $(ROMBIN) -ahd $(VHD) -outs -nvram $(NVRAM)
+	$(EMU) -verbose \
+		-ebus,slot 7 "platformboard" \
+		-ebus,board "kinnow2" \
+		-rom $(ROMBIN) -ahd $(VHD) -outs -nvram $(NVRAM)
 
 bkern:
 	make kernel vnfs
 
 kernel:
-	$(DRAGONC) ./sys/vnix/Kernel/Kernel.d ./tmp/vnix
+	$(DRAGONC) ./sys/kabosu/vnix/Kernel.d ./tmp/vnix
 
-	./vfu ./bin/vnixfs.img w /vnix ./tmp/vnix
+	$(VFUTIL) $(VNFS) w /vnix ./tmp/vnix
 
 vnfs:
 	dd if=$(VNFS) of=$(VHD) conv=notrunc seek=2 bs=4096 count=512

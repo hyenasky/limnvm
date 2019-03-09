@@ -165,29 +165,44 @@ procedure Printf (* ... fmt -- *)
 	end
 end
 
-procedure ConsoleInit (* -- *)
-	if (ConsoleOut@ 0 ==) (* nobody asserted themselves as stdout, try setting default *)
-		"console-stdout" NVRAMGetVar dup if (0 ==)
-			drop "/serial" "console-stdout" NVRAMSetVar
-			"/serial"
-		end
+(* try to redirect stdout/stdin to /gconsole and /keyboard if these nodes exist *)
+procedure ConsoleUserOut (* -- *)
+	auto gcn
 
-		DevTreeWalk ConsoleOut!
+	"/gconsole" DevTreeWalk gcn!
 
-		if (ConsoleOut@ 0 ==)
-			"/serial" DevTreeWalk ConsoleOut!
-		end
+	auto kbn
+	"/keyboard" DevTreeWalk kbn!
+
+	if (gcn@)
+		gcn@ ConsoleOut!
 	end
-	if (ConsoleIn@ 0 ==) (* nobody asserted stdin *)
-		"console-stdin" NVRAMGetVar dup if (0 ==)
-			drop "/serial" "console-stdin" NVRAMSetVar
-			"/serial"
-		end
 
-		DevTreeWalk ConsoleIn!
+	if (kbn@)
+		kbn@ ConsoleIn!
+	end
+end
 
-		if (ConsoleIn@ 0 ==)
-			"/serial" DevTreeWalk ConsoleIn!
-		end
+procedure ConsoleInit (* -- *)
+	"console-stdout" NVRAMGetVar dup if (0 ==)
+		drop "/serial" "console-stdout" NVRAMSetVar
+		"/serial"
+	end
+
+	DevTreeWalk ConsoleOut!
+
+	if (ConsoleOut@ 0 ==)
+		"/serial" DevTreeWalk ConsoleOut!
+	end
+
+	"console-stdin" NVRAMGetVar dup if (0 ==)
+		drop "/serial" "console-stdin" NVRAMSetVar
+		"/serial"
+	end
+
+	DevTreeWalk ConsoleIn!
+
+	if (ConsoleIn@ 0 ==)
+		"/serial" DevTreeWalk ConsoleIn!
 	end
 end

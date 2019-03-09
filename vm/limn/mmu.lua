@@ -3,313 +3,52 @@ local mmu = {}
 local lshift, rshift, tohex, arshift, band, bxor, bor, bnot, bror, brol =
 	lshift, rshift, tohex, arshift, band, bxor, bor, bnot, bror, brol
 
-function mmu.new(vm, c, memsize)
+
+function mmu.new(vm, c)
 	local m = {}
 
 	local mmu = m
-
-	m.memsize = memsize
-	local memsize = m.memsize
-
-	m.physmem = ffi.new("uint8_t[?]", memsize)
-	local physmem = m.physmem
-
-	m.areas = ffi.new("uint16_t[32768]")
-	m.areah = {}
-	local areas = m.areas
-	local areah = m.areah
-
-	m.physstart = 0
-	local physstart = m.physstart
-
-	m.physend = physstart + memsize - 1
-	local physend = m.physend
 
 	m.translating = false
 
 	local lsa = 0
 
-	--areas are 128kb pages of translated address space that
-	--call back to a handler when accessed.
-	--they're a bit of a bottleneck. there's probably
-	--a better way to do this
+	local bus = c.bus
 
-	--the handlers are called like handler(s, t, offset, v)
-
-	--s = 0: byte
-	--s = 1: int
-	--s = 2: long
-
-	--t = 0: read, v = nil
-	--t = 1: write, v = value
-
-	function m.mapArea(page, handler)
-		local n = 0
-
-		for i = 1, 32768 do
-			if not areah[i] then
-				n = i
-				break
-			end
-		end
-
-		areah[n] = handler
-
-		areas[page] = n
-	end
-	local mapArea = m.mapArea
-
-	function m.unmapArea(page)
-		local e = areas[page]
-		areas[page] = 0
-
-		areah[e] = nil
-	end
-	local unmapArea = m.unmapArea
-
-	local function copyPhPh(a1,a2,len)
-		a1 = a1 - physstart
-		a2 = a2 - physstart
-
-		for i = 0, len-1 do
-			physmem[a1 + i] = physmem[a2 + i]
-		end
-	end
-
-	local function copyPhSp(a1,a2,len,h)
-		a1 = a1 - physstart
-		a2 = band(a2, 0x1FFFF)
-
-		for i = 0, len-1 do
-			physmem[a1 + i] = h(0, 0, a2 + i)
-		end
-	end
-
-	local function copySpPh(a1,a2,len,h)
-		a1 = band(a1, 0x1FFFF)
-		a2 = a2 - physstart
-
-		for i = 0, len-1 do
-			h(0, 1, a1 + i, physmem[a2 + i])
-		end
-	end
-
-	local function copySpSp(a1,a2,len,h1,h2)
-		a1 = band(a1, 0x1FFFF)
-		a2 = band(a2, 0x1FFFF)
-
-		for i = 0, len-1 do
-			h(0, 1, a1 + i, h(0, 0, a2 + i))
-		end
-	end
-
-	local whL = {
-		copyPhPh,
-		copyPhSp,
-		copySpPh,
-		copySpSp,
-	}
-
-	function m.copy(a1,a2,len)
-		local e = 0
-
-		local h1
-		local h2
-
-		local m1 = areas[rshift(a1, 17)]
-
-		if m1 ~= 0 then -- mapped
-			h1 = areah[m1]
-			e = bor(e, 1)
-		else -- physmem
-			if not ((physstart <= a1) and (physend >= a1)) then
-				return
-			end
-		end
-
-		local m2 = areas[rshift(a2, 17)]
-
-		if m2 ~= 0 then -- mapped
-			h2 = areah[m2]
-			e = bor(e, 2)
-		else -- physmem
-			if not ((physstart <= a2) and (physend >= a2)) then
-				return
-			end
-		end
-
-		whL[e](a1,a2,len,h1,h2)
-	end
-	local copy = m.copy
-
-	--translated address space functions:
-	--post-paging translation addresses
-	--physmem starts at 0 in the translated address space
-
-	--these are long and repetitive to avoid unnecessary function calls
-	--to speed it up a lil bit
-	--(although areas kinda butcher performance anyway)
-
-	--LITTLE ENDIAN!!
+	local TfetchByte = bus.fetchByte
+	local TfetchInt = bus.fetchInt
+	local TfetchLong = bus.fetchLong
+	local TstoreByte = bus.storeByte
+	local TstoreInt = bus.storeInt
+	local TstoreLong = bus.storeLong
 
 	function m.TfetchByte(ptr)
-		local m = areas[rshift(ptr, 17)]
-
-		if m ~= 0 then -- mapped
-			lsa = ptr
-
-			local e = areah[m](0, 0, band(ptr, 0x1FFFF))
-
-			return e
-		end
-
-		-- no match. physmem it is
-
-		if (physstart <= ptr) and (physend >= ptr) then
-			lsa = ptr
-
-			local e = physmem[ptr - physstart]
-
-			return e
-		else
-			print(string.format("fb %x lsa %x", ptr, lsa))
-			mmu.fault(7) -- this is cpu dependent
-		end
-
-		return 0
+		return TfetchByte()
 	end
-	local TfetchByte = m.TfetchByte
 
 	function m.TfetchInt(ptr)
-		local m = areas[rshift(ptr, 17)]
-
-		if m ~= 0 then -- mapped
-			lsa = ptr
-			return areah[m](1, 0, band(ptr, 0x1FFFF))
-		end
-
-		-- no match. physmem it is
-
-		if (physstart <= ptr) and (physend >= ptr+1) then
-			lsa = ptr
-
-			local b = ptr - physstart
-
-			local u1 = physmem[b]
-			local u2 = physmem[b+1]
-
-			return (u2 * 0x100) + u1 -- little endian
-		else
-			print(string.format("fi %x lsa %x", ptr, lsa))
-			mmu.fault(7) -- this is cpu dependent
-		end
-
-		return 0
+		return TfetchInt(ptr)
 	end
-	local TfetchInt = m.TfetchInt
 
 	function m.TfetchLong(ptr)
-		local m = areas[rshift(ptr, 17)]
-
-		if m ~= 0 then -- mapped
-			lsa = ptr
-			return areah[m](2, 0, band(ptr, 0x1FFFF))
-		end
-
-		-- no match. physmem it is
-
-		if (physstart <= ptr) and (physend >= ptr+3) then
-			lsa = ptr
-			local b = ptr - physstart
-
-			local u1 = physmem[b]
-			local u2 = physmem[b+1]
-			local u3 = physmem[b+2]
-			local u4 = physmem[b+3]
-
-			return (u4 * 0x1000000) + (u3 * 0x10000) + (u2 * 0x100) + u1 -- little endian
-		else
-			print(string.format("fl %x lsa %x", ptr, lsa))
-			mmu.fault(7) -- this is cpu dependent
-		end
-
-		return 0
+		return TfetchLong(ptr)
 	end
-	local TfetchLong = m.TfetchLong
 
 	--[[
 		Store versions of the above.
 	]]
 
 	function m.TstoreByte(ptr, v)
-		local m = areas[rshift(ptr, 17)]
-
-		if m ~= 0 then -- mapped
-			lsa = ptr
-			return areah[m](0, 1, band(ptr, 0x1FFFF), v)
-		end
-
-		-- no match. physmem it is
-
-		if (physstart <= ptr) and (physend >= ptr) then
-			lsa = ptr
-			physmem[ptr - physstart] = v
-		else
-			print(string.format("sb %x lsa %x", ptr, lsa))
-			mmu.fault(7) -- this is cpu dependent
-		end
+		TstoreByte(ptr, v)
 	end
-	local TstoreByte = m.TstoreByte
 
 	function m.TstoreInt(ptr, v)
-		local m = areas[rshift(ptr, 17)]
-
-		if m ~= 0 then -- mapped
-			lsa = ptr
-			return areah[m](1, 1, band(ptr, 0x1FFFF), v)
-		end
-
-		-- no match. physmem it is
-
-		if (physstart <= ptr) and (physend >= ptr+1) then
-			lsa = ptr
-			local u1, u2 = (math.modf(v/256))%256, v%256
-			local b = ptr - physstart
-
-			physmem[b] = u2
-			physmem[b+1] = u1 -- little endian
-		else
-			print(string.format("si %x lsa %x", ptr, lsa))
-			mmu.fault(7) -- this is cpu dependent
-		end
+		TstoreInt(ptr, v)
 	end
-	local TstoreInt = m.TstoreInt
 
 	function m.TstoreLong(ptr, v)
-		local m = areas[rshift(ptr, 17)]
-
-		if m ~= 0 then -- mapped
-			lsa = ptr
-			return areah[m](2, 1, band(ptr, 0x1FFFF), v)
-		end
-
-		-- no match. physmem it is
-
-		if (physstart <= ptr) and (physend >= ptr+3) then
-			lsa = ptr
-			local u1, u2, u3, u4 = (math.modf(v/16777216))%256, (math.modf(v/65536))%256, (math.modf(v/256))%256, v%256
-			local b = ptr - physstart
-
-			physmem[b] = u4
-			physmem[b+1] = u3
-			physmem[b+2] = u2
-			physmem[b+3] = u1 -- little endian
-		else
-			print(string.format("sl %x lsa %x", ptr, lsa))
-			mmu.fault(7) -- this is cpu dependent
-		end
+		TstoreLong(ptr, v)
 	end
-	local TstoreLong = m.TstoreLong
 
 	-- mmu registers
 
@@ -318,7 +57,7 @@ function mmu.new(vm, c, memsize)
 
 	--[[
 
-	0: RAM size
+	0: reserved
 	1: base
 	2: bounds
 	3: page table
@@ -326,9 +65,7 @@ function mmu.new(vm, c, memsize)
 
 	]]
 
-	registers[0] = memsize
-
-	mapArea(0x7FF9, function (s, t, offset, v)
+	bus.mapArea(23, function (s, t, offset, v)
 		if offset > 128 then
 			return 0
 		end
@@ -337,7 +74,7 @@ function mmu.new(vm, c, memsize)
 			return 0
 		end
 
-		if s ~= 2 then
+		if s ~= 2 then -- must be a 32-bit access
 			return 0
 		end
 
@@ -356,7 +93,7 @@ function mmu.new(vm, c, memsize)
 		local bptr = ptr + registers[1]
 		if bptr >= registers[2] then
 			registers[4] = bptr
-			mmu.fault(7)
+			c.cpu.pagefault()
 		end
 
 		return TfetchByte(bptr)
@@ -369,7 +106,7 @@ function mmu.new(vm, c, memsize)
 		local bptr = ptr + registers[1]
 		if bptr+1 >= registers[2] then
 			registers[4] = bptr
-			mmu.fault(7)
+			c.cpu.pagefault()
 		end
 
 		return TfetchInt(bptr)
@@ -382,7 +119,7 @@ function mmu.new(vm, c, memsize)
 		local bptr = ptr + registers[1]
 		if bptr+3 >= registers[2] then
 			registers[4] = bptr
-			mmu.fault(7)
+			c.cpu.pagefault()
 		end
 
 		return TfetchLong(bptr)
@@ -396,7 +133,7 @@ function mmu.new(vm, c, memsize)
 		local bptr = ptr + registers[1]
 		if bptr >= registers[2] then
 			registers[4] = bptr
-			mmu.fault(7)
+			c.cpu.pagefault()
 		end
 
 		return TstoreByte(bptr, v)
@@ -409,7 +146,7 @@ function mmu.new(vm, c, memsize)
 		local bptr = ptr + registers[1]
 		if bptr+1 >= registers[2] then
 			registers[4] = bptr
-			mmu.fault(7)
+			c.cpu.pagefault()
 		end
 
 		return TstoreInt(bptr, v)
@@ -422,7 +159,7 @@ function mmu.new(vm, c, memsize)
 		local bptr = ptr + registers[1]
 		if bptr+3 >= registers[2] then
 			registers[4] = bptr
-			mmu.fault(7)
+			c.cpu.pagefault()
 		end
 
 		return TstoreLong(bptr, v)

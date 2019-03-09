@@ -17,7 +17,7 @@ local vm = {}
 
 vm.speed = 1
 
-vm.hz = 7000000
+vm.hz = 5000000
 vm.targetfps = 60
 vm.instructionsPerTick = 0
 
@@ -108,11 +108,13 @@ function love.update(dt)
 	local cycle = vm.computer.cpu.cycle
 
 	if cycle then
-		local t = vm.instructionsPerTick
-		for i = 1, t do
-			cycle()
-			cycles = cycles + 1
-		end
+		xpcall(function ()
+			local t = vm.instructionsPerTick
+			for i = 1, t do
+				cycle()
+				cycles = cycles + 1
+			end
+		end, function (x) vm.computer.cpu.vmerr(x) end)
 	end
 
 	if cpanel.enabled then

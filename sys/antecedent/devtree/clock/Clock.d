@@ -1,66 +1,30 @@
-const ClockPortCmd 0x20
-const ClockPortA 0x21
+(* platform independent keyboard interface, antecedent standard *)
 
-const ClockDefaultInterval 20 (* every 20 ms *)
+var SClockNode 0
 
-var ClockUptimeMS 0
-var ClockInterval 0
+procedure GClockDefault (* -- defaultnode *)
+	"clock-dev" NVRAMGetVar dup if (0 ==)
+		drop "/ebus/platformboard/citron/clock" "clock-dev" NVRAMSetVar
+		"/ebus/platformboard/citron/clock"
+	end
+
+	auto dn
+	DevTreeWalk dn!
+
+	if (dn@ 0 ==)
+		"/ebus/platformboard/citron/clock" "clock-dev" NVRAMSetVar
+		"/ebus/platformboard/citron/clock" DevTreeWalk dn!
+	end
+
+	dn@
+end
 
 procedure BuildClock (* -- *)
-	DeviceNew
-		"clock" DSetName
+	GClockDefault SClockNode!
 
-		pointerof ClockSetInterval "setInterval" DAddMethod
-		pointerof ClockUptime "uptime" DAddMethod
-		pointerof ClockWait "wait" DAddMethod
-	DeviceExit
-
-	ClockDefaultInterval ClockSetInterval (* set clock ticking *)
-
-	pointerof ClockIntASM 0x36 InterruptRegister
-end
-
-asm "
-
-ClockIntASM:
-	pusha
-
-	call ClockInt
-
-	popa
-	iret
-
-"
-
-procedure ClockInt (* -- *)
-	ClockInterval@ ClockUptimeMS@ + ClockUptimeMS!
-end
-
-procedure ClockWait (* ms -- *)
-	auto ms
-	ms!
-
-	auto wu
-	ClockUptimeMS@ ms@ + wu!
-
-	while (ClockUptimeMS@ wu@ <) end
-end
-
-procedure ClockUptime (* -- ms *)
-	ClockUptimeMS@
-end
-
-procedure ClockSetInterval (* ms -- *)
-	auto ms
-	ms!
-
-	ms@ ClockInterval!
-
-	auto rs
-	InterruptDisable rs!
-
-	ms@ ClockPortA DCitronOutl
-	1 ClockPortCmd DCitronCommand
-
-	rs@ InterruptRestore
+	if (SClockNode@ 0 ~=)
+		SClockNode@ DeviceClone
+			"clock" DSetName
+		DeviceExit
+	end
 end

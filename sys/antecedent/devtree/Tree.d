@@ -1,23 +1,29 @@
-#include "devtree/Citron.d"
-#include "devtree/MMU.d"
-#include "devtree/clock/Clock.d"
+#include "devtree/Memory.d"
+#include "devtree/ebus/EBus.d"
 #include "devtree/screen/Screen.d"
 #include "devtree/serial/Serial.d"
-#include "devtree/amanatsu/Amanatsu.d"
-#include "devtree/ahdb/AHDB.d"
 #include "devtree/gconsole/GConsole.d"
+#include "devtree/mouse/Mouse.d"
+#include "devtree/keyboard/Keyboard.d"
+#include "devtree/bootdisk/BootDisk.d"
+#include "devtree/clock/Clock.d"
 
 procedure BuildTree (* -- *)
-	BuildMMU
-	BuildClock
-	BuildScreen
-	BuildSerial
-	BuildAmanatsu
-	BuildAHDB
-	BuildGConsole
-
 	DeviceNew
 		"cpu" DSetName
 		"limn" "type" DAddProperty
 	DeviceExit
+
+	BuildEBus
+	BuildMemory
+
+	(* platform independent pseudo-devices *)
+	BuildSerial
+	BuildScreen
+	BuildGConsole
+	BuildKeyboard
+	BuildMouse
+	BuildBootDisk
+	BuildClock
+
 end

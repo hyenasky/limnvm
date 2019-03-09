@@ -1,4 +1,4 @@
-const NVRAMBase 0xF2000000
+const NVRAMBase 0xF8001000
 const NVRAMSize 65536
 
 const NVRAMVarCount 255

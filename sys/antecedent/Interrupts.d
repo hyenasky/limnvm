@@ -5,6 +5,7 @@ procedure InterruptsInit (* -- *)
 
 	InterruptsVT@ asm "
 		call _POP
+		cli
 		mov ivt, r0
 	"
 
@@ -18,13 +19,42 @@ procedure InterruptsInit (* -- *)
 	InterruptEnable
 end
 
+table FaultsNames
+	"Division by zero"
+	"Invalid opcode"
+	"Page fault"
+	"Privilege violation"
+	"General fault"
+	"Fatal fault"
+	"Double fault"
+	"Bus error"
+	"I/O error"
+	"Spurious interrupt"
+endtable
+
 procedure FaultsHandler (* num loc -- *)
 	auto rs
 	InterruptDisable rs!
 
-	swap "!!!FAULT!!! %d at %x, halting\n" Printf
+	auto loc
+	loc!
 
-	while (1) end
+	auto num
+	num!
+
+	ConsoleUserOut
+
+	if (ConsoleIn@ 0 ~=)
+		loc@ [num@]FaultsNames@ "!!!FAULT!!! %s at %x, resetting on console input\n" Printf
+
+		while (Getc ERR ==) end
+
+		Reset
+	end else
+		loc@ [num@]FaultsNames@ "!!!FAULT!!! %s at %x, resetting\n" Printf
+
+		Reset
+	end
 end
 
 asm "

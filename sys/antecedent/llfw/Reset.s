@@ -2,7 +2,8 @@
 ;special purpose registers are reset, the ROM is copied into RAM, and the main firmware procedure is called
 
 Reset:
-	li rs, 0
+	li rs, 0x80000000 ;reset ebus
+	cli
 	li ivt, 0
 	li sp, 0x1FFF
 	call LLFWShadow

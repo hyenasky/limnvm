@@ -365,7 +365,7 @@ procedure MonitorLsH (* tabs dev -- *)
 			i@ 1 + i!
 		end
 
-		n@ pnode@ TreeNodeValue DeviceNode_Name + @ "/%s\n" Printf
+		pnode@ TreeNodeValue DeviceNode_Name + @ "/%s\n" Printf
 
 		tabs@ 1 + pnode@ MonitorLsH
 
@@ -420,14 +420,15 @@ procedure MonitorCommandBanner (* -- *)
 	"/" DeviceSelect
 		"boot firmware up\n" BannerPrint
 		"author" DGetProperty "version" DGetProperty DGetName "Implementation details: %s %s written by %s\n" BannerPrint
+		"build" DGetProperty "Build %s\n" BannerPrint
 	DeviceExit
 
 	"/cpu" DeviceSelect
 		"type" DGetProperty "CPU type: %s\n" BannerPrint
 	DeviceExit
 
-	"/mmu" DeviceSelect
-		"totalram" DGetProperty 1024 / "RAM: %dkb\n" BannerPrint
+	"/memory" DeviceSelect
+		"totalRAM" DGetProperty 1024 / "RAM: %dkb\n" BannerPrint
 	DeviceExit
 
 	'\n' Putc

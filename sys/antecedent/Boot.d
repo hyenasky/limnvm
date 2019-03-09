@@ -27,12 +27,7 @@ endtable
 procedure AutoBoot (* -- ok? *)
 	auto bootnode
 
-	"boot-dev" NVRAMGetVar dup if (0 ==)
-		drop "/ahdb/0/a" "boot-dev" NVRAMSetVar
-		"/ahdb/0/a"
-	end
-
-	DevTreeWalk bootnode!
+	"/bootdisk" DevTreeWalk bootnode!
 
 	if (bootnode@ 0 ==)
 		7 return
@@ -54,6 +49,10 @@ procedure BootNode (* devnode args -- ok? *)
 
 	auto devnode
 	devnode!
+
+	if (devnode@ 0 ==)
+		7 return
+	end
 
 	auto brecord
 	4096 Calloc brecord!

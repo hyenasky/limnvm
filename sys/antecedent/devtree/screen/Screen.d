@@ -1,198 +1,37 @@
-(* antecedent screen driver for Kinnow framebuffer *)
+(* platform independent screen interface, antecedent standard *)
 
-const ScreenFBStart 0xF4000000
+var SScreenNode 0
 
-const ScreenGPUCmdPort 0x12
-const ScreenGPUPortA 0x13
-const ScreenGPUPortB 0x14
-const ScreenGPUPortC 0x15
+procedure GScreenDefault (* -- defaultnode *)
+	"screen-dev" NVRAMGetVar dup if (0 ==)
+		drop "/ebus/kinnow2" "screen-dev" NVRAMSetVar
+		"/ebus/kinnow2"
+	end
 
-const ScreenGPUInfo 0x1
-const ScreenGPURectangle 0x2
-const ScreenGPUVsync 0x3
-const ScreenGPUScroll 0x4
-const ScreenGPUWindow 0x6
+	auto dn
+	DevTreeWalk dn!
 
-var ScreenWidth 0
-var ScreenHeight 0
+	if (dn@ 0 ==)
+		"/ebus/kinnow2" "screen-dev" NVRAMSetVar
+		"/ebus/kinnow2" DevTreeWalk dn!
+	end
 
-var ScreenVsyncList 0
-
-var ScreenNeedsInit 1
-
-procedure ScreenInfo (* -- w h *)
-	auto rs
-	InterruptDisable rs!
-
-	ScreenGPUInfo ScreenGPUCmdPort DCitronCommand
-	
-	ScreenGPUPortB DCitronIni
-	ScreenGPUPortA DCitronIni
-
-	rs@ InterruptRestore
+	dn@
 end
 
 procedure BuildScreen (* -- *)
-	auto w
-	auto h
-	ScreenInfo w! h!
+	GScreenDefault SScreenNode!
 
-	if (w@ 0 ==)
-		return
+	if (SScreenNode@ 0 ~=)
+		SScreenNode@ DeviceClone
+			"screen" DSetName
+		DeviceExit
+
+		if ("screen-bg" NVRAMGetVar 0 ==)
+			0x56 "screen-bg" NVRAMSetVarNum
+		end
+		if ("screen-fg" NVRAMGetVar 0 ==)
+			0x00 "screen-fg" NVRAMSetVarNum
+		end
 	end
-
-	DeviceNew
-		"screen" DSetName
-
-		ScreenFBStart "framebuffer" DAddProperty
-		w@ "width" DAddProperty
-		h@ "height" DAddProperty
-
-		pointerof ScreenRectangle "rectangle" DAddMethod
-		pointerof ScreenScroll "scroll" DAddMethod
-		pointerof ScreenWindow "window" DAddMethod
-		pointerof ScreenVsyncAdd "vsyncAdd" DAddMethod
-		pointerof ScreenInit "init" DAddMethod
-	DeviceExit
-
-	if ("screen-bg" NVRAMGetVar 0 ==)
-		0x56 "screen-bg" NVRAMSetVarNum
-	end
-	if ("screen-fg" NVRAMGetVar 0 ==)
-		0x00 "screen-fg" NVRAMSetVarNum
-	end
-
-	w@ ScreenWidth!
-	h@ ScreenHeight!
-
-	ListCreate ScreenVsyncList!
-
-	ScreenVsyncOn
-end
-
-procedure ScreenInit (* -- *)
-	if (ScreenNeedsInit@)
-		"screen-bg" NVRAMGetVarNum ScreenWidth@ ScreenHeight@ 0 0 ScreenRectangle
-
-		0 ScreenNeedsInit!
-	end
-end
-
-procedure ScreenWindow (* x y w h -- *)
-	auto h
-	h!
-
-	auto w
-	w!
-
-	auto y
-	y!
-
-	auto x
-	x!
-
-	auto wh
-	w@ 16 << h@ | wh!
-
-	auto rs
-	InterruptDisable rs!
-
-	x@ ScreenGPUPortA DCitronOutl
-	y@ ScreenGPUPortB DCitronOutl
-	wh@ ScreenGPUPortC DCitronOutl
-
-	ScreenGPUWindow ScreenGPUCmdPort DCitronCommand
-
-	rs@ InterruptRestore
-end
-
-asm "
-
-ScreenVsyncIntASM:
-	pusha
-
-	call ScreenVsyncInt
-
-	popa
-	iret
-
-"
-
-procedure ScreenVsyncAdd (* handler -- *)
-	ScreenVsyncList@ ListInsert
-end
-
-procedure ScreenVsyncInt (* -- *)
-	auto rs
-	InterruptDisable rs!
-
-	auto n
-	ScreenVsyncList@ ListHead n!
-
-	while (n@ 0 ~=)
-		n@ ListNodeValue Call
-
-		n@ ListNodeNext n!
-	end
-
-	rs@ InterruptRestore
-end
-
-procedure ScreenVsyncOn (* -- *)
-	auto rs
-	InterruptDisable rs!
-
-	pointerof ScreenVsyncIntASM 0x35 InterruptRegister
-
-	ScreenGPUVsync ScreenGPUCmdPort DCitronCommand
-
-	rs@ InterruptRestore
-end
-
-procedure ScreenScroll (* color rows -- *)
-	auto rs
-	InterruptDisable rs!
-
-	auto rows
-	rows!
-
-	auto color
-	color!
-
-	rows@ ScreenGPUPortA DCitronOutl
-	color@ ScreenGPUPortB DCitronOutl
-
-	ScreenGPUScroll ScreenGPUCmdPort DCitronCommand
-
-	rs@ InterruptRestore
-end
-
-procedure ScreenRectangle (* color w h x y -- *)
-	auto rs
-	InterruptDisable rs!
-
-	auto y
-	y!
-	auto x
-	x!
-	auto h
-	h!
-	auto w
-	w!
-	auto color
-	color!
-
-	auto cxy
-	x@ 16 << y@ | cxy!
-
-	auto cwh
-	w@ 16 << h@ | cwh!
-
-	cwh@ ScreenGPUPortA DCitronOutl
-	cxy@ ScreenGPUPortB DCitronOutl
-	color@ ScreenGPUPortC DCitronOutl
-
-	ScreenGPURectangle ScreenGPUCmdPort DCitronCommand
-
-	rs@ InterruptRestore
 end
