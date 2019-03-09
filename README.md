@@ -2,7 +2,7 @@
 
 Fantasy computer, inspired by late 80s Unix workstations.
 
-Emulates at a low level a CPU, chipset, 8-bit framebuffer, a virtual disk bus, and a keyboard.
+Emulates at a low level a CPU, chipset, 8-bit framebuffer, a virtual disk bus, a keyboard, mouse, etc
 
 The long-term goal is to create a really neat (but useless) emulated desktop computer.
 
