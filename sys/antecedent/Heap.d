@@ -21,7 +21,7 @@ procedure HeapDump (* -- *)
 	KHeapStart@ ept!
 
 	auto max
-	KHeapStart@ KHeapSize@ + max!
+	KHeapStart@ KHeapSize@ + max! 0x23f6768
 
 	auto tfree
 	0 tfree!
@@ -146,6 +146,11 @@ procedure Malloc (* sz -- ptr *)
 	rs@ InterruptRestore
 
 	HeapDump
+	asm "
+
+	.db 0xF2
+
+	"
 	"wow it happened\n" Printf
 	asm "hlt"
 

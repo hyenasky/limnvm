@@ -22,10 +22,10 @@ rom:
 	$(DRAGONC) $(ROM) $(ROMBIN) -noprim
 
 run:
-	$(EMU) -verbose \
+	$(EMU) \
 		-ebus,slot 7 "platformboard" \
 		-ebus,board "kinnow2" \
-		-rom $(ROMBIN) -ahd $(VHD) -outs -nvram $(NVRAM)
+		-rom $(ROMBIN) -ahd $(VHD) -serial,stdio -nvram $(NVRAM)
 
 bkern:
 	make kernel vnfs

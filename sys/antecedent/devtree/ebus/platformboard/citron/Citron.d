@@ -47,6 +47,8 @@ procedure DCitronCommand (* command port -- *)
 	auto pbase
 	4 * DCitronBase + pbase!
 
+	while (pbase@ gb 0 ~=) end
+
 	auto cmd
 	cmd!
 
@@ -59,6 +61,8 @@ end
 procedure DCitronCommandASync (* command port -- *)
 	auto pbase
 	4 * DCitronBase + pbase!
+
+	while (pbase@ gb 0 ~=) end
 
 	auto cmd
 	cmd!

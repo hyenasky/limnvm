@@ -223,6 +223,32 @@ procedure DGetProperty (* name -- string or 0 *)
 	0 return
 end
 
+procedure DGetMethod (* name -- ptr or 0 *)
+	auto name
+	name!
+
+	auto plist
+	DGetMethods plist!
+
+	auto n
+	plist@ List_Head + @ n!
+
+	while (n@ 0 ~=)
+		auto pnode
+		n@ ListNodeValue
+		pnode!
+
+		if (pnode@ DeviceMethod_Name + @ name@ strcmp)
+			auto out
+			pnode@ DeviceMethod_Func + @ return
+		end
+
+		n@ ListNodeNext n!
+	end
+
+	0
+end
+
 procedure DCallMethod (* ... name -- ... ok? *)
 	auto name
 	name!

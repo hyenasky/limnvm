@@ -1,8 +1,43 @@
 var ConsoleOut 0
 var ConsoleIn 0
 
+var ConsoleOutMethod 0
+var ConsoleInMethod 0
+
+procedure ConsoleSetIn (* devnode -- *)
+	dup ConsoleIn!
+
+	auto dn
+	dn!
+
+	if (dn@ 0 ==)
+		0 ConsoleInMethod!
+		return
+	end
+
+	dn@ DeviceSelectNode
+		"read" DGetMethod ConsoleInMethod!
+	DeviceExit
+end
+
+procedure ConsoleSetOut (* devnode -- *)
+	dup ConsoleOut!
+
+	auto dn
+	dn!
+
+	if (dn@ 0 ==)
+		0 ConsoleOutMethod!
+		return
+	end
+
+	dn@ DeviceSelectNode
+		"write" DGetMethod ConsoleOutMethod!
+	DeviceExit
+end
+
 procedure Putc (* c -- *)
-	if (ConsoleOut@ 0 ==)
+	if (ConsoleOutMethod@ 0 ==)
 
 	asm "
 
@@ -15,15 +50,15 @@ procedure Putc (* c -- *)
 	end
 
 	ConsoleOut@ DeviceSelectNode
-		"write" DCallMethod drop
+		ConsoleOutMethod@ Call
 	DeviceExit
 end
 
 procedure Getc (* -- c *)
-	if (ConsoleIn@ 0 ==) ERR return end
+	if (ConsoleInMethod@ 0 ==) ERR return end
 
 	ConsoleIn@ DeviceSelectNode
-		"read" DCallMethod drop
+		ConsoleInMethod@ Call
 	DeviceExit
 end
 
@@ -168,41 +203,38 @@ end
 (* try to redirect stdout/stdin to /gconsole and /keyboard if these nodes exist *)
 procedure ConsoleUserOut (* -- *)
 	auto gcn
-
 	"/gconsole" DevTreeWalk gcn!
 
 	auto kbn
 	"/keyboard" DevTreeWalk kbn!
 
 	if (gcn@)
-		gcn@ ConsoleOut!
-	end
+		gcn@ ConsoleSetOut
 
-	if (kbn@)
-		kbn@ ConsoleIn!
+		if (kbn@)
+			kbn@ ConsoleSetIn
+		end
 	end
 end
 
 procedure ConsoleInit (* -- *)
+	auto co
+	auto ci
+
 	"console-stdout" NVRAMGetVar dup if (0 ==)
 		drop "/serial" "console-stdout" NVRAMSetVar
 		"/serial"
 	end
 
-	DevTreeWalk ConsoleOut!
-
-	if (ConsoleOut@ 0 ==)
-		"/serial" DevTreeWalk ConsoleOut!
-	end
+	DevTreeWalk co!
 
 	"console-stdin" NVRAMGetVar dup if (0 ==)
 		drop "/serial" "console-stdin" NVRAMSetVar
 		"/serial"
 	end
 
-	DevTreeWalk ConsoleIn!
+	DevTreeWalk ci!
 
-	if (ConsoleIn@ 0 ==)
-		"/serial" DevTreeWalk ConsoleIn!
-	end
+	co@ ConsoleSetOut
+	ci@ ConsoleSetIn
 end

@@ -44,7 +44,7 @@ function mouse.new(vm, c, intw)
 	end
 
 	vm.registerCallback("keypressed", function (key, t, isrepeat)
-		if t == "rgui" then
+		if t == "ralt" then
 			if mfocused then
 				mfocused = false
 				love.mouse.setGrabbed(false)
@@ -58,7 +58,7 @@ function mouse.new(vm, c, intw)
 	vm.registerCallback("mousepressed", function (x, y, button)
 		if not mfocused then
 			mfocused = true
-			love.window.setTitle("limnvm - press right windows key to uncapture mouse")
+			love.window.setTitle("limnvm - press right alt key to uncapture mouse")
 			love.mouse.setVisible(false)
 			love.mouse.setGrabbed(true)
 			love.mouse.setRelativeMode(true)

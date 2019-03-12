@@ -1,0 +1,1 @@
+1. setting nvram menu-skip?=false leads to heap corruption, somehow

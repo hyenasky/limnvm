@@ -7,6 +7,15 @@ local serial = {}
 --	2: read
 -- port 0x11: in/out byte
 
+local tc = [[
+
+while true do
+	local c = (io.read() or "").."\n"
+	love.thread.getChannel("serialin"):push(c)
+end
+
+]]
+
 function serial.new(vm, c, bus)
 	local s = {}
 
@@ -68,13 +77,17 @@ function serial.new(vm, c, bus)
 
 		return 2
 	end)
-	vm.registerOpt("-ins", function (arg, i)
-		s.stream(io.read("*a"))
-
-		return 1
-	end)
-	vm.registerOpt("-outs", function (arg, i)
+	vm.registerOpt("-serial,stdio", function (arg, i)
 		stdo = true
+
+		love.thread.newThread(tc):start()
+
+		vm.registerCallback("update", function (dt)
+			local x = love.thread.getChannel("serialin"):pop()
+			if x then
+				s.stream(x)
+			end
+		end)
 
 		return 1
 	end)

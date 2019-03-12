@@ -13,8 +13,12 @@ function cpu.new(vm, c)
 
 	p.intq = {}
 	local intq = p.intq
+	p.fq = {}
+	local fq = p.fq
 
 	local running = true
+
+	local cpuid = 0x80010000
 
 	local mmu = c.mmu
 	local fetchByte = mmu.fetchByte
@@ -59,8 +63,17 @@ function cpu.new(vm, c)
 	local faultOccurred = false
 
 	function p.fault(num) -- raise fault
+		if num > 9 then num = 9 end
+
 		if not faultOccurred then
-			int(num)
+			local sfq = #fq
+
+			if sfq >= 256 then
+				table.remove(fq, 1)
+				sfq = 255
+			end
+
+			fq[sfq + 1] = num
 			faultOccurred = true
 		end
 	end
@@ -713,6 +726,16 @@ function cpu.new(vm, c)
 			return pc + 1
 		end,
 
+		[0x4C] = function (pc) -- [cpu]
+			if kernelMode() then
+				reg[0] = cpuid
+			else
+				fault(3)
+			end
+
+			return pc + 1
+		end,
+
 		-- temporary for vm debug purposes
 
 		[0xF0] = function (pc) -- [] dump all registers to terminal
@@ -728,6 +751,18 @@ function cpu.new(vm, c)
 
 			return pc + 1
 		end,
+		[0xF2] = function (pc) -- [] dump last 20 items on stack
+			local osp = reg[33]
+
+			for i = 1, 20 do
+				local osz = reg[33]
+				print(string.format("(%X)[%d]	%X", osz, i, pop()))
+			end
+
+			reg[33] = osp
+
+			return pc + 1
+		end,
 	}
 	local optable = p.optable
 
@@ -740,16 +775,15 @@ function cpu.new(vm, c)
 
 			faultOccurred = false
 
-			local siq = #intq
-			-- if interrupts in queue, vector table initialized, and interrupts enabled
-			if (siq > 0) and (reg[35] ~= 0) and (getState(1) == 1) then
-				-- do interrupt
+			local sfq = #fq
+			-- if faults in queue, and vector table initialized
+			-- all faults are non-maskable!
+			if (sfq > 0) and (reg[35] ~= 0) then
+				-- do fault
 
-				local n = intq[1] -- get num
+				local n = fq[1]
 
 				local v = TfetchLong(reg[35] + n*4) -- get vector
-
-				local ors = reg[34]
 
 				if v ~= 0 then
 					local ors = reg[34]
@@ -763,10 +797,39 @@ function cpu.new(vm, c)
 
 					reg[32] = v
 					reg[0] = n
-					table.remove(intq, 1)
-				else -- re-raise as spurious interrupt
-					table.remove(intq, 1)
-					int(9)
+					table.remove(fq, 1)
+				end
+			end
+
+			if sfq == 0 then
+				local siq = #intq
+				-- if interrupts in queue, vector table initialized, and interrupts enabled
+				if (siq > 0) and (reg[35] ~= 0) and (getState(1) == 1) then
+					-- do interrupt
+
+					local n = intq[1] -- get num
+
+					local v = TfetchLong(reg[35] + n*4) -- get vector
+
+					local ors = reg[34]
+
+					if v ~= 0 then
+						local ors = reg[34]
+						setState(0, 0) -- kernel mode
+						setState(1, 0) -- disable interrupts
+						setState(2, 0) -- disable mmu
+
+						push(reg[32])
+						push(reg[0])
+						push(ors)
+
+						reg[32] = v
+						reg[0] = n
+						table.remove(intq, 1)
+					else -- re-raise as spurious interrupt
+						table.remove(intq, 1)
+						fault(9)
+					end
 				end
 			end
 
@@ -932,7 +995,11 @@ raise an interrupt.]], 0, 10)
 		local si = interruptbox.ti[interruptbox.i][5]
 		local e = tonumber(si)
 		if e then
-			int(e)
+			if e < 10 then
+				fault(e)
+			else
+				int(e)
+			end
 			interruptbox.ti[interruptbox.i][5] = ""
 		end
 	end)

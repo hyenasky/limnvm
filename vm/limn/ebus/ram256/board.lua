@@ -12,7 +12,7 @@ function ram256.new(vm, c, branch, intn, memsize)
 	local physmem = ram.physmem
 
 	function ram.handler(s, t, offset, v)
-		if offset >= memsize then
+		if offset > memsize-1 then
 			c.cpu.buserror()
 			return 0
 		end
@@ -57,7 +57,36 @@ function ram256.new(vm, c, branch, intn, memsize)
 		return rhandler(s, t, offset + 128*1024*1024, v)
 	end)
 
+	-- each slot fits a stick with a maximum capacity of 256mb/8 slots for 32mb
+	-- in a real system, slots would be mapped at regular offsets from the start of the ram256 area
+	-- but here we try to keep it contiguous
+
+	local slots = {}
+
+	local et = math.floor(memsize/(32*1024*1024))
+	for i = 1, et do
+		slots[i] = 32*1024*1024
+	end
+
+	local zt = memsize % (32*1024*1024)
+
+	if zt > 0 then
+		slots[et + 1] = zt
+	end
+
 	c.bus.mapArea(branch + 2, function (s, t, offset, v) -- RAM Descriptory
+		if s ~= 2 then return 0 end
+
+		if band(offset, 3) ~= 0 then -- must be aligned to 4 bytes
+			return 0
+		end
+
+		if offset == 0 then
+			return 8 -- slots
+		else
+			return slots[offset/4] or 0
+		end
+
 		return 0
 	end)
 

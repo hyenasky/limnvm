@@ -44,7 +44,7 @@ procedure FaultsHandler (* num loc -- *)
 
 	ConsoleUserOut
 
-	if (ConsoleIn@ 0 ~=)
+	if (ConsoleInMethod@ 0 ~=)
 		loc@ [num@]FaultsNames@ "!!!FAULT!!! %s at %x, resetting on console input\n" Printf
 
 		while (Getc ERR ==) end
@@ -63,6 +63,8 @@ FaultsHandlerASM:
 	pop r1
 	pop r1
 	pop r1
+
+	li sp, 0x1FFF ;put stack in known location
 
 	call _PUSH
 

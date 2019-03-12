@@ -6,7 +6,8 @@ var MonitorLine 0
 var MonitorLinePoint 0
 
 var MonitorNvramrc 0
-var MonitorOLDCI 0
+var MonitorOldCI 0
+var MonitorOldCIM 0
 var MonitorNvramrcBuf 0
 var MonitorNvramrcLen 0
 var MonitorNvramrcPtr 0
@@ -86,7 +87,8 @@ procedure MonitorDoNvramrc (* -- *)
 
 		MonitorNvramrcBuf@ strlen MonitorNvramrcLen!
 
-		ConsoleIn@ MonitorOLDCI!
+		ConsoleInMethod@ MonitorOldCIM!
+		ConsoleIn@ MonitorOldCI!
 
 		if (MonitorPastNvramrc@ 0 ==)
 			DeviceNew
@@ -94,10 +96,10 @@ procedure MonitorDoNvramrc (* -- *)
 
 				pointerof MonitorNvramrcRead "read" DAddMethod
 
-				DevCurrent@ dup ConsoleIn! MonitorPastNvramrc!
+				DevCurrent@ dup ConsoleSetIn MonitorPastNvramrc!
 			DeviceExit
 		end else
-			MonitorPastNvramrc@ ConsoleIn!
+			MonitorPastNvramrc@ ConsoleSetIn
 		end
 	end
 end
@@ -112,7 +114,8 @@ end
 
 procedure MonitorNvramrcExit (* -- *)
 	if (MonitorNvramrc@)
-		 MonitorOLDCI@ ConsoleIn!
+		MonitorOldCIM@ ConsoleInMethod!
+		MonitorOldCI@ ConsoleIn!
 
 		0 MonitorNvramrc!
 
