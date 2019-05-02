@@ -10,7 +10,7 @@ The CPU is based around the second iteration of my toy architecture.
 
 Ships with a pre-built boot ROM binary, a disktools image (see *Using the toolchain*), and a vnix image.
 
-![Running the Antecedent 3.x boot firmware](https://i.imgur.com/rF1qw5e.png)
+![Running the Antecedent 3.x boot firmware](https://i.imgur.com/2bIec1a.png)
 
 ## Running
 
