@@ -4,8 +4,7 @@ Fantasy computer, inspired by late 80s Unix workstations.
 
 Emulates at a low level a CPU, chipset, 8-bit framebuffer, a virtual disk bus, a keyboard, mouse, etc
 
-The virtual machine includes a simple windowed GUI to tie together components into an integrated user experience,
-for instance the framebuffer window and the serial terminal.
+The virtual machine's user interface is a simple windowed experience. You can open various windows for different components by right clicking anywhere on the background.
 
 The long-term goal is to create a really neat (but useless) emulated desktop computer.
 
