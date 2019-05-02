@@ -503,7 +503,7 @@ function w.winterest()
 	ows.width = wi
 	ows.height = he
 
-	--love.window.setMode(ows.width, ows.height, ows.flags)
+	love.window.setMode(ows.width, ows.height, ows.flags)
 end
 
 function w.draw()
