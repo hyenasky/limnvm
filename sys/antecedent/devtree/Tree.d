@@ -7,6 +7,7 @@
 #include "devtree/keyboard/Keyboard.d"
 #include "devtree/bootdisk/BootDisk.d"
 #include "devtree/clock/Clock.d"
+#include "devtree/blitter/Blitter.d"
 
 procedure BuildTree (* -- *)
 	DeviceNew
@@ -15,6 +16,7 @@ procedure BuildTree (* -- *)
 	DeviceExit
 
 	BuildEBus
+
 	BuildMemory
 
 	(* platform independent pseudo-devices *)
@@ -25,5 +27,5 @@ procedure BuildTree (* -- *)
 	BuildMouse
 	BuildBootDisk
 	BuildClock
-
+	BuildGBlitter
 end

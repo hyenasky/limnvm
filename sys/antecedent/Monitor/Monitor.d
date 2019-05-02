@@ -142,7 +142,6 @@ procedure MonitorParseDevPath (* -- dev or 0 *)
 	end
 
 	word@ Free
-
 	dev@
 end
 
@@ -217,6 +216,8 @@ procedure MonitorAddCommand (* helptext callback name -- *)
 	name@ command@ MonitorCommand_Name + !
 	callback@ command@ MonitorCommand_Callback + !
 	helptext@ command@ MonitorCommand_HelpText + !
+
+	(* command@ MonitorCommand_HelpText + command@ MonitorCommand_Callback + command@ MonitorCommand_Name + "namep 0x%x\ncbp 0x%x\nhtp 0x%x\n" Printf *)
 
 	command@ MonitorCommandList@ ListInsert
 end

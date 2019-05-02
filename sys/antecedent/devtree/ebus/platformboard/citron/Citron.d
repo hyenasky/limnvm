@@ -2,6 +2,7 @@
 #include "devtree/ebus/platformboard/citron/clock/Clock.d"
 #include "devtree/ebus/platformboard/citron/serial/Serial.d"
 #include "devtree/ebus/platformboard/citron/amanatsu/Amanatsu.d"
+#include "devtree/ebus/platformboard/citron/blitter/Blitter.d"
 
 (* citron bus functions *)
 (* disabling and restoring interrupts is up to the user of these functions *)
@@ -16,6 +17,7 @@ procedure BuildCitron (* -- *)
 		BuildCClock
 		BuildCSerial
 		BuildAmanatsu
+		BuildBlitter
 	DeviceExit
 end
 

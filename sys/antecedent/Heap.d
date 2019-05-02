@@ -21,7 +21,7 @@ procedure HeapDump (* -- *)
 	KHeapStart@ ept!
 
 	auto max
-	KHeapStart@ KHeapSize@ + max! 0x23f6768
+	KHeapStart@ KHeapSize@ + max!
 
 	auto tfree
 	0 tfree!
@@ -39,6 +39,9 @@ procedure HeapDump (* -- *)
 		auto size
 		ept@ KHeapHeader_size + @ size!
 
+		auto asz
+		size@ KHeapHeader_SIZEOF - asz!
+
 		auto alloc
 		ept@ KHeapHeader_allocated + gb alloc!
 
@@ -48,6 +51,7 @@ procedure HeapDump (* -- *)
 		i@ "block %d:\n" Printf
 		ept@ "	ptr: 0x%x\n" Printf
 		size@ "	size: %d bytes\n" Printf
+		asz@ "	real size: %d bytes\n" Printf
 		last@ "	last: 0x%x\n" Printf
 		alloc@ "	allocated: %d\n" Printf
 
@@ -55,6 +59,11 @@ procedure HeapDump (* -- *)
 			talloc@ size@ + talloc!
 		end else
 			tfree@ size@ + tfree!
+		end
+
+		if (size@ 0 ==)
+			"size 0, very weird, breaking\n" Printf
+			break
 		end
 
 		stotal@ size@ + stotal!
@@ -68,7 +77,6 @@ end
 (* first-fit *)
 
 procedure Malloc (* sz -- ptr *)
-
 	auto rs
 	InterruptDisable rs!
 
@@ -76,11 +84,11 @@ procedure Malloc (* sz -- ptr *)
 	sz!
 
 	if (sz@ 0 ==)
-		0 rs@ InterruptRestore return
+		ERR rs@ InterruptRestore return
 	end
 
 	auto big
-	sz@ KHeapHeader_size + 1 - big!
+	sz@ KHeapHeader_SIZEOF + 1 - big!
 
 	auto ept
 	KHeapStart@ ept!
@@ -145,15 +153,6 @@ procedure Malloc (* sz -- ptr *)
 
 	rs@ InterruptRestore
 
-	HeapDump
-	asm "
-
-	.db 0xF2
-
-	"
-	"wow it happened\n" Printf
-	asm "hlt"
-
 	ERR return (* no space big enough *)
 end
 
@@ -207,11 +206,7 @@ procedure HeapMerge (* ptr msize -- *)
 				last@ next@ KHeapHeader_last + ! (* next block points to last *)
 			end
 
-			last@ ns@ HeapMerge (* recursion *)
-
-			rs@ InterruptRestore
-
-			return
+			last@ ptr!
 		end
 	end
 
@@ -231,8 +226,6 @@ procedure HeapMerge (* ptr msize -- *)
 			end
 
 			ns@ ptr@ KHeapHeader_size + ! (* set OUR size to the combined size *)
-
-			ptr@ ns@ HeapMerge (* recursion *)
 		end
 	end
 
@@ -245,6 +238,10 @@ procedure Free (* ptr -- *)
 
 	auto ptr
 	ptr!
+
+	if (ptr@ 0 == ptr@ ERR == ||)
+		ptr@ "tried to free 0x%x!\n" Printf
+	end
 
 	auto nptr
 	ptr@ KHeapHeader_SIZEOF - nptr!

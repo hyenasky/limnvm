@@ -28,6 +28,11 @@ var GCEscape 0
 
 var GCLineLenBuf 0
 
+var GCRectP 0
+var GCScrollP 0
+
+var GConsoleModified 0
+
 asm "
 
 GConsoleFont:
@@ -45,12 +50,20 @@ procedure BuildGConsole (* -- *)
 		"framebuffer" DGetProperty GCFBStart!
 		"width" DGetProperty GCGWidth!
 		"height" DGetProperty GCGHeight!
+
+		"rectangle" DGetMethod GCRectP!
+		"scroll" DGetMethod GCScrollP!
 	DeviceExit
 
 	DeviceNew
 		"gconsole" DSetName
 
 		pointerof GConsolePutChar "write" DAddMethod
+		pointerof GConsoleModifiedF "chkModified" DAddMethod
+		pointerof GConsoleSetScreen "setScreen" DAddMethod
+
+		GConsoleFontWidth "fontWidth" DAddProperty
+		GConsoleFontHeight "fontHeight" DAddProperty
 	DeviceExit
 
 	"screen-bg" NVRAMGetVarNum GCColorBG!
@@ -60,6 +73,28 @@ procedure BuildGConsole (* -- *)
 	GCGHeight@ GConsoleFontHeight / GCHeight!
 
 	GCHeight@ 4 * Calloc GCLineLenBuf!
+end
+
+procedure GConsoleSetScreen (* fbp w h prect pscroll -- *)
+	0 GConsoleModified!
+
+	GCScrollP!
+	GCRectP!
+
+	GCGHeight!
+	GCGWidth!
+	GCFBStart!
+
+	GCGWidth@ GConsoleFontWidth / GCWidth!
+	GCGHeight@ GConsoleFontHeight / GCHeight!
+
+	GConsoleClear
+end
+
+procedure GConsoleModifiedF (* -- modified? *)
+	GConsoleModified@
+
+	0 GConsoleModified!
 end
 
 procedure GConsoleLongestLine (* -- width *)
@@ -83,16 +118,26 @@ procedure GConsoleLongestLine (* -- width *)
 	longest@
 end
 
-procedure GConsoleClear (* -- *)
-	GCScreenNode@ DeviceSelectNode
-		GCColorBG@ GConsoleLongestLine GConsoleFontWidth * GCHeight@ GConsoleFontHeight * 0 0 "rectangle" DCallMethod drop
-	DeviceExit
-
+procedure GConsoleReset (* -- *)
 	0 GCCurX!
 	0 GCCurY!
 
 	GCLineLenBuf@ Free
 	GCHeight@ 4 * Calloc GCLineLenBuf!
+end
+
+procedure GConsoleClear (* -- *)
+	GCColorBG@ GConsoleLongestLine GConsoleFontWidth * GCHeight@ GConsoleFontHeight * 0 0 GConsoleRect
+
+	GConsoleReset
+
+	1 GConsoleModified!
+end
+
+procedure GConsoleRect (* color w h x y -- *)
+	GCScreenNode@ DeviceSelectNode
+		GCRectP@ Call
+	DeviceExit
 end
 
 procedure GConsoleScroll (* rows -- *)
@@ -103,9 +148,12 @@ procedure GConsoleScroll (* rows -- *)
 	InterruptDisable rs!
 
 	GCScreenNode@ DeviceSelectNode
-		0 0 GConsoleLongestLine GConsoleFontWidth * GConsoleFontHeight GCHeight@ * "window" DCallMethod drop
-		GCColorBG@ rows@ GConsoleFontHeight * "scroll" DCallMethod drop
-		0 0 0 0 "window" DCallMethod drop
+		0 0
+		GConsoleLongestLine GConsoleFontWidth *
+		GConsoleFontHeight GCHeight@ *
+		GCColorBG@
+		rows@ GConsoleFontHeight *
+		GCScrollP@ Call
 	DeviceExit
 
 	rs@ InterruptRestore
@@ -134,12 +182,14 @@ procedure GConsoleScroll (* rows -- *)
 		0 r@ !
 		r@ 4 + r!
 	end
+
+	1 GConsoleModified!
 end
 
 procedure GConsoleDoCur (* color -- *)
-	GCScreenNode@ DeviceSelectNode
-		GConsoleFontWidth GConsoleFontHeight GCCurX@ GConsoleFontWidth * GCCurY@ GConsoleFontHeight * "rectangle" DCallMethod drop
-	DeviceExit
+	GConsoleFontWidth GConsoleFontHeight GCCurX@ GConsoleFontWidth * GCCurY@ GConsoleFontHeight * GConsoleRect
+
+	1 GConsoleModified!
 end
 
 procedure GConsoleClearCur (* -- *)
@@ -310,7 +360,7 @@ GConsoleDrawCharASM:
 
 	;push r3 ;use r3 as y iterator
 	push r4 ;use r4 as x iterator
-	push r5 ;use r5 to store ptr to current byte in font to look at
+	push r11 ;use r11 to store ptr to current byte in font to look at
 	push r6 ;use r6 to store current byte
 	push r7 ;use r7 for scratch in xloop
 	push r8 ;use r8 to cache 0x7
@@ -319,9 +369,9 @@ GConsoleDrawCharASM:
 
 	mov r10, r3
 
-	muli r5, r0, GConsoleFontBytesPerRow
-	muli r5, r5, GConsoleFontHeight
-	addi r5, r5, GConsoleFont
+	muli r11, r0, GConsoleFontBytesPerRow
+	muli r11, r11, GConsoleFontHeight
+	addi r11, r11, GConsoleFont
 	li r3, 0
 .yloop:
 	cmpi r3, GConsoleFontHeight
@@ -329,7 +379,7 @@ GConsoleDrawCharASM:
 
 	;body of y loop
 
-	lrr.l r6, r5
+	lrr.l r6, r11
 
 	li r4, 0 ;ctr
 	li r8, GConsoleFontWidthA ;reverse ctr
@@ -337,7 +387,7 @@ GConsoleDrawCharASM:
 	cmpi r4, GConsoleFontWidth
 	bge .ynext
 
-	rsh r7, r6, r4
+	rsh r7, r6, r4 ;use r4 or r8 depending on bit order
 	andi r7, r7, 1
 	cmpi r7, 1
 	bne .xnext
@@ -368,7 +418,7 @@ GConsoleDrawCharASM:
 	b .xloop
 
 .ynext:
-	addi r5, r5, GConsoleFontBytesPerRow
+	addi r11, r11, GConsoleFontBytesPerRow
 	addi r3, r3, 1
 	b .yloop
 
@@ -378,7 +428,7 @@ GConsoleDrawCharASM:
 	pop r8
 	pop r7
 	pop r6
-	pop r5
+	pop r11
 	pop r4
 
 .spout:
@@ -389,23 +439,19 @@ GConsoleDrawCharASM:
 procedure GConsoleDrawChar (* x y char color -- *)
 	asm "
 
-	call _POP
-	mov r3, r0
+	popv r5, r3
 
-	call _POP
-	mov r4, r0
+	popv r5, r0
 
-	call _POP
-	mov r2, r0
+	popv r5, r2
 
-	call _POP
-	mov r1, r0
-
-	mov r0, r4
+	popv r5, r1
 
 	call GConsoleDrawCharASM
 
 	"
+
+	1 GConsoleModified!
 end
 
 

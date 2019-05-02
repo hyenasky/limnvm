@@ -52,7 +52,7 @@ procedure MonitorCommandsInit (* -- *)
 	MonitorAddCommand
 
 	"Reset system."
-	pointerof Reset
+	pointerof LateReset
 	"reset"
 	MonitorAddCommand
 
@@ -109,6 +109,11 @@ procedure MonitorCommandsInit (* -- *)
 	"[time in ms] Wait."
 	pointerof MonitorCommandWait
 	"wait"
+	MonitorAddCommand
+
+	0
+	pointerof _SF
+	"sf"
 	MonitorAddCommand
 end
 
@@ -227,6 +232,10 @@ procedure MonitorCommandDinfo (* -- *)
 	DeviceExit
 
 	'\n' Putc
+end
+
+procedure _SF (* -- *)
+	"c;\n" Printf
 end
 
 procedure MonitorCommandPrintnvramrc (* -- *)
@@ -420,7 +429,8 @@ procedure MonitorCommandBanner (* -- *)
 	"/" DeviceSelect
 		"boot firmware up\n" BannerPrint
 		"author" DGetProperty "version" DGetProperty DGetName "Implementation details: %s %s written by %s\n" BannerPrint
-		"build" DGetProperty "Build %s\n" BannerPrint
+		"platform" DGetProperty "Platform: %s\n" BannerPrint
+		"buildDate" DGetProperty "build" DGetProperty "Build %s, built on %s\n" BannerPrint
 	DeviceExit
 
 	"/cpu" DeviceSelect

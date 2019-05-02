@@ -1,11 +1,11 @@
 procedure Main (* -- *)
-	"menu-skip?" NVRAMGetVar dup if (0 ==)
-		drop "false" "menu-skip?" NVRAMSetVar
+	"verbose?" NVRAMGetVar dup if (0 ==)
+		drop "false" "verbose?" NVRAMSetVar
 		"false"
 	end
 
-	if ("true" strcmp ~~)
-		Menu
+	if ("true" strcmp)
+		ConsoleUserOut
 	end
 
 	"auto-boot?" NVRAMGetVar dup if (0 ==)
@@ -14,10 +14,15 @@ procedure Main (* -- *)
 	end
 
 	if ("true" strcmp)
-		[AutoBoot]BootErrors@ " boot: %s\n" Printf
+		auto r
+		AutoBoot r!
+		if (r@ 1 ~=)
+			ConsoleUserOut
+		end
+		[r@]BootErrors@ " boot: %s\n" Printf
 	end
 
 	Monitor
 
-	Reset
+	LateReset
 end

@@ -39,6 +39,26 @@ local strucsz = {}
 
 local bd = ""
 
+local function BitNOT(n)
+    local p,c=1,0
+    for i = 0, 31 do
+        local r=n%2
+        if r<1 then c=c+p end
+        n,p=(n-r)/2,p*2
+    end
+    return c
+end
+
+local function tc(n) -- two's complement
+	n = tonumber(n)
+
+	if n < 0 then
+		n = BitNOT(math.abs(n))+1
+	end
+
+	return n
+end
+
 local function pass1(source) --turn into lines
 	return lineate(source)
 end
@@ -203,6 +223,9 @@ local function pass3(tokens) --register labels
 					error("Error: Unfinished org")
 				end
 			elseif tt[1] == ".bc" then
+				if tt[2] == "@" then
+					ln.lit = ".bc "..tostring(bc)
+				end
 				out[#out+1] = ln
 			else
 				local e = inst[tt[1]]
@@ -304,7 +327,7 @@ local function pass5(lines, sym) --generate binary
 					bc = bc + 1
 				else
 					if tonumber(v) then
-						out = out..string.char(tonumber(v))
+						out = out..string.char(tc(v))
 						bc = bc + 1
 					else
 						error("Error: Invalid bytelist!")
@@ -315,7 +338,7 @@ local function pass5(lines, sym) --generate binary
 			for i = 2, #tt do
 				local v = tt[i]
 				if tonumber(v) then
-					local u1, u2 = splitInt16(v)
+					local u1, u2 = splitInt16(tc(v))
 
 					out = out..string.char(u2)..string.char(u1)
 					bc = bc + 2
@@ -327,7 +350,7 @@ local function pass5(lines, sym) --generate binary
 			for i = 2, #tt do
 				local v = tt[i]
 				if tonumber(v) then
-					local u1, u2, u3, u4 = splitInt32(v)
+					local u1, u2, u3, u4 = splitInt32(tc(v))
 
 					out = out..string.char(u4)..string.char(u3)..string.char(u2)..string.char(u1)
 					bc = bc + 4
@@ -378,13 +401,14 @@ local function pass5(lines, sym) --generate binary
 
 			for k,v in ipairs(rands) do
 				if v == 1 then
-					out = out..string.char(tt[k+1])
+
+					out = out..string.char(tc(tt[k+1]))
 				elseif v == 2 then
-					local u1, u2 = splitInt16(tt[k+1])
+					local u1, u2 = splitInt16(tc(tt[k+1]))
 
 					out = out..string.char(u2)..string.char(u1)
 				elseif v == 4 then
-					local u1, u2, u3, u4 = splitInt32(tt[k+1])
+					local u1, u2, u3, u4 = splitInt32(tc(tt[k+1]))
 
 					out = out..string.char(u4)..string.char(u3)..string.char(u2)..string.char(u1)
 				end

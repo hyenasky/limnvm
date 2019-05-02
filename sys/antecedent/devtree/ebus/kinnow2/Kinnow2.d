@@ -64,7 +64,7 @@ procedure KinnowOutPortC (* v -- *)
 	KinnowSlotSpace@ KinnowCmdPorts + KinnowGPUPortC + !
 end
 
-procedure KinnowInfo (* -- w h *)
+procedure KinnowInfo (* -- h w *)
 	auto rs
 	InterruptDisable rs!
 
@@ -104,11 +104,13 @@ procedure BuildKinnow (* -- *)
 		KinnowFBStart@ "framebuffer" DAddProperty
 		w@ "width" DAddProperty
 		h@ "height" DAddProperty
+		8 "depth" DAddProperty
 
 		pointerof KinnowRectangle "rectangle" DAddMethod
 		pointerof KinnowScroll "scroll" DAddMethod
-		pointerof KinnowWindow "window" DAddMethod
 		pointerof KinnowVsyncAdd "vsyncAdd" DAddMethod
+		pointerof KinnowBlit "blit" DAddMethod
+		pointerof KinnowBlitBack "blitBack" DAddMethod
 		pointerof KinnowInit "init" DAddMethod
 	DeviceExit
 
@@ -118,6 +120,113 @@ procedure BuildKinnow (* -- *)
 	ListCreate KinnowVsyncList!
 
 	KinnowVsyncOn
+end
+
+var KinnowBlitterNode 0
+var KinnowBlitterC 0
+
+procedure KinnowBlitBack (* x y w h mode bitmap -- *)
+	auto ptr
+	ptr!
+	auto mode
+	mode!
+	auto h
+	h!
+	auto w
+	w!
+	auto y
+	y!
+	auto x
+	x!
+
+	auto bnode
+	KinnowBlitterNode@ bnode!
+
+	if (bnode@ 0 ==)
+		"/blitter" DevTreeWalk bnode!
+		if (bnode@ 0 ==)
+			return
+		end
+
+		bnode@ KinnowBlitterNode!
+
+		bnode@ DeviceSelectNode
+			"blit" DGetMethod KinnowBlitterC!
+		DeviceExit
+	end
+
+	auto fbstart
+	KinnowFBStart@ fbstart!
+
+	auto fbw
+	auto fbh
+	KinnowInfo fbw! fbh!
+
+	fbstart@ x@ + y@ fbw@ * + fbstart!
+
+	auto modulo
+	fbw@ w@ - modulo!
+
+	modulo@
+	w@
+	h@
+	ptr@
+	fbstart@
+	mode@
+
+	KinnowBlitterC@ Call
+end
+
+procedure KinnowBlit (* x y w h mode bitmap -- *)
+	auto ptr
+	ptr!
+	auto mode
+	mode!
+	auto h
+	h!
+	auto w
+	w!
+	auto y
+	y!
+	auto x
+	x!
+
+	auto bnode
+	KinnowBlitterNode@ bnode!
+
+	if (bnode@ 0 ==)
+		"/blitter" DevTreeWalk bnode!
+		if (bnode@ 0 ==)
+			return
+		end
+
+		bnode@ KinnowBlitterNode!
+
+		bnode@ DeviceSelectNode
+			"blit" DGetMethod KinnowBlitterC!
+		DeviceExit
+	end
+
+	auto fbstart
+	KinnowFBStart@ fbstart!
+
+	auto fbw
+	auto fbh
+	KinnowInfo fbw! fbh!
+
+	fbstart@ x@ + y@ fbw@ * + fbstart!
+
+	auto modulo
+	fbw@ w@ - 16 << modulo!
+
+	modulo@
+	w@
+	h@
+	fbstart@
+	ptr@
+	mode@
+
+	KinnowBlitterC@ Call
 end
 
 procedure KinnowInit (* -- *)
@@ -194,7 +303,7 @@ procedure KinnowVsyncOn (* -- *)
 	rs@ InterruptRestore
 end
 
-procedure KinnowScroll (* color rows -- *)
+procedure KinnowScroll (* x y w h color rows -- *)
 	auto rs
 	InterruptDisable rs!
 
@@ -204,10 +313,26 @@ procedure KinnowScroll (* color rows -- *)
 	auto color
 	color!
 
+	auto h
+	h!
+
+	auto w
+	w!
+
+	auto y
+	y!
+
+	auto x
+	x!
+
+	x@ y@ w@ h@ KinnowWindow
+
 	rows@ KinnowOutPortA
 	color@ KinnowOutPortB
 
 	KinnowGPUScroll KinnowCommand
+
+	0 0 0 0 KinnowWindow
 
 	rs@ InterruptRestore
 end

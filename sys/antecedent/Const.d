@@ -1,2 +1,2 @@
-const ERR 0xFFFFFFFF
+const ERR -1
 const OK 1

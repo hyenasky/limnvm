@@ -41,6 +41,8 @@ procedure AMousePoll (* -- *)
 						pointerof AMouseInterrupt i@ AmanatsuSetInterrupt
 
 						pointerof AMouseAddCallback "addCallback" DAddMethod
+						pointerof AMouseEvent "getEvent" DAddMethod
+						pointerof AMouseReset "reset" DAddMethod
 					end
 
 					AMouseCount@ 1 + AMouseCount!
@@ -52,10 +54,42 @@ procedure AMousePoll (* -- *)
 
 		i@ 1 + i!
 	end
+
+	AMouseReset
 end
 
 procedure AMouseAddCallback (* handler -- *)
 	AMouseCallbacks@ ListInsert
+end
+
+procedure AMouseEvent (* -- detail event *)
+	auto id
+	"aID" DGetProperty id!
+
+	auto rs
+	InterruptDisable rs!
+
+	id@ AmanatsuSelectDev
+	1 AmanatsuCommand
+	AmanatsuReadB
+	AmanatsuReadA
+
+	rs@ InterruptRestore
+end
+
+procedure AMouseReset (* -- *)
+	auto id
+	AMouseCDev@ DeviceSelectNode
+		"aID" DGetProperty id!
+	DeviceExit
+
+	auto rs
+	InterruptDisable rs!
+
+	id@ AmanatsuSelectDev
+	2 AmanatsuCommand
+
+	rs@ InterruptRestore
 end
 
 procedure AMouseInterrupt (* -- *)

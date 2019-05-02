@@ -11,6 +11,7 @@ procedure ConsoleSetIn (* devnode -- *)
 	dn!
 
 	if (dn@ 0 ==)
+		0 ConsoleIn!
 		0 ConsoleInMethod!
 		return
 	end
@@ -27,6 +28,7 @@ procedure ConsoleSetOut (* devnode -- *)
 	dn!
 
 	if (dn@ 0 ==)
+		0 ConsoleOut!
 		0 ConsoleOutMethod!
 		return
 	end
@@ -41,7 +43,7 @@ procedure Putc (* c -- *)
 
 	asm "
 
-	call _POP
+	popv r5, r0
 	.db 0xF1
 
 	"
@@ -237,4 +239,12 @@ procedure ConsoleInit (* -- *)
 
 	co@ ConsoleSetOut
 	ci@ ConsoleSetIn
+
+	if (ConsoleOut@ 0 ==)
+		"/serial" DevTreeWalk ConsoleSetOut
+	end
+
+	if (ConsoleIn@ 0 ==)
+		"/serial" DevTreeWalk ConsoleSetIn
+	end
 end

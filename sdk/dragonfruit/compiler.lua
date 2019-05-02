@@ -38,7 +38,7 @@ local iwords = {
 		out:a("ret")
 
 		out.auto = {}
-		out.auto._LAU = 5
+		out.auto._LAU = 6
 		out.rauto = {}
 	end,
 	["return"] = function (out, stream)
@@ -84,7 +84,7 @@ local iwords = {
 
 		df.cblock(out, stream, ")")
 
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("cmpi r0, 0")
 		out:a("be "..out:syms(o))
 
@@ -112,7 +112,7 @@ local iwords = {
 
 		df.cblock(out, stream, ")")
 
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("cmpi r0, 0")
 		out:a("be "..out:syms(f))
 		out:a(out:syms(t)..":")
@@ -303,43 +303,43 @@ local iwords = {
 		p = name[1]
 
 		out:a("li r0, "..tostring(p))
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["bswap"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("bswap r0, r0")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["=="] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("cmp r0, r1")
 		out:a("andi r0, rf, 0x1") -- isolate eq bit in flag register
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["~="] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("cmp r0, r1")
 		out:a("not rf, rf")
 		out:a("andi r0, rf, 0x1") -- isolate eq bit in flag register
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	[">"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("cmp r0, r1")
 		out:a("rshi r0, rf, 0x1") -- isolate gt bit in flag register
 		out:a("andi r0, r0, 1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["<"] = function (out, stream) -- NOT FLAG:1 and NOT FLAG:0
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("cmp r0, r1")
 		out:a("not r1, rf")
 		out:a("rshi r0, r1, 0x1") -- isolate gt bit in flag register
@@ -347,135 +347,135 @@ local iwords = {
 		out:a("not rf, rf")
 		out:a("and r0, r0, rf")
 		out:a("andi r0, r0, 1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	[">="] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("cmp r0, r1")
 		out:a("mov r0, rf")
 		out:a("rshi rf, rf, 1") -- bitwise magic
 		out:a("ior r0, r0, rf")
 		out:a("andi r0, r0, 1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["<="] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("cmp r0, r1")
 		out:a("not rf, rf")
 		out:a("rshi r0, rf, 0x1") -- isolate gt bit in flag register
 		out:a("andi r0, r0, 1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["~"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("not r0, r0")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["~~"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("not r0, r0")
 		out:a("andi r0, r0, 1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["|"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("ior r0, r0, r1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["||"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("ior r0, r0, r1")
 		out:a("andi r0, r0, 1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["&"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("and r0, r0, r1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["&&"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("and r0, r0, r1")
 		out:a("andi r0, r0, 1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	[">>"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("rsh r0, r0, r1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["<<"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("lsh r0, r0, r1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["dup"] = function (out, stream)
-		out:a("call _POP")
-		out:a("call _PUSH")
-		out:a("call _PUSH")
+		out:a("popv r5, r0")
+		out:a("pushv r5, r0")
+		out:a("pushv r5, r0")
 	end,
 	["swap"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("xch r0, r1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 		out:a("mov r0, r1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["drop"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 	end,
 	["+"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("add r0, r1, r0")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["-"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("sub r0, r0, r1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["*"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mul r0, r1, r0")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["/"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("div r0, r0, r1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["%"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mod r0, r0, r1")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["["] = function (out, stream)
 		df.cblock(out, stream, "]")
@@ -486,10 +486,10 @@ local iwords = {
 			print("unexpected "..tab[2].." at [")
 		end
 
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("muli r0, r0, 4")
 		out:a("addi r0, r0, "..tab[1])
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["("] = function (out, stream)
 		local t = stream:extract()
@@ -499,44 +499,44 @@ local iwords = {
 		end
 	end,
 	["ix"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("muli r0, r0, 4")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("add r0, r1, r0")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["gb"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("lrr.b r0, r0")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["gi"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("lrr.i r0, r0")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["@"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("lrr.l r0, r0")
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	end,
 	["sb"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("srr.b r1, r0")
 	end,
 	["si"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("srr.i r1, r0")
 	end,
 	["!"] = function (out, stream)
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r1, r0")
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("srr.l r1, r0")
 	end,
 	["buffer"] = function (out, stream)
@@ -604,11 +604,11 @@ local function cauto(out, stream, reg)
 	end
 
 	if t[1] == "!" then
-		out:a("call _POP")
+		out:a("popv r5, r0")
 		out:a("mov r"..tostring(reg)..", r0")
 	elseif t[1] == "@" then
 		out:a("mov r0, r"..tostring(reg))
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	else
 		print("unexpected "..t[2].." operator on auto reference")
 	end
@@ -619,10 +619,10 @@ local function cword(out, stream, word)
 		iwords[word](out, stream)
 	elseif out.var[word] then
 		out:a("li r0, "..word)
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	elseif out.const[word] then
 		out:a("li r0, "..tostring(out.const[word]))
-		out:a("call _PUSH")
+		out:a("pushv r5, r0")
 	elseif out.auto[word] then
 		cauto(out, stream, out.auto[word])
 	else
@@ -634,7 +634,7 @@ end
 
 local function cnumber(out, stream, number)
 	out:a("li r0, "..tostring(number))
-	out:a("call _PUSH")
+	out:a("pushv r5, r0")
 end
 
 local function cstring(out, stream, string)
@@ -654,7 +654,7 @@ local function cstring(out, stream, string)
 	out:d("	.db 0x0")
 
 	out:a("li r0, "..out:syms(s))
-	out:a("call _PUSH")
+	out:a("pushv r5, r0")
 
 	out.oc = out.oc + 1
 end
@@ -681,15 +681,11 @@ function df.cblock(out, stream, endt)
 	end
 end
 
-function df.compile(stream, out, prim)
-	if not prim then
-		out:a(io.open(sd.."prim.s", "r"):read("*a"))
-	end
-
+function df.compile(stream, out)
 	df.cblock(out, stream, nil)
 end
 
-function df.c(src, path, prim)
+function df.c(src, path)
 	local out = {}
 	out.ds = ""
 	out.as = ""
@@ -699,7 +695,7 @@ function df.c(src, path, prim)
 	out.var = {}
 	out.const = {}
 	out.auto = {}
-	out.auto._LAU = 5
+	out.auto._LAU = 6
 
 	out.wc = {}
 
@@ -802,7 +798,7 @@ function df.c(src, path, prim)
 
 	local s = lexer.new(src, kc, whitespace)
 
-	df.compile(s, out, prim)
+	df.compile(s, out)
 
 	return df.opt(out.as .. "\n" .. out.ds)
 end
@@ -851,14 +847,14 @@ function df.opt(asm)
 
 		i = i + 1
 
-		if v == "call _PUSH" then
-			if la == "call _POP" then
+		if v == "pushv r5, r0" then
+			if la == "popv r5, r0" then
 				i = i + 1
 			else
 				out = out .. v .. "\n"
 			end
-		elseif v == "call _POP" then
-			if la == "call _PUSH" then
+		elseif v == "popv r5, r0" then
+			if la == "pushv r5, r0" then
 				i = i + 1
 			else
 				out = out .. v .. "\n"

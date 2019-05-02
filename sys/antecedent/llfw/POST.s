@@ -29,8 +29,8 @@ LLFWPOST:
 	ret
 
 .noRAM:
+	iori r1, r0, 0x01000000
 	li r0, LLFWPOSTNoRAM
-	li r1, 0x01000000
 	b LLFWError
 
 .badPB:
@@ -72,5 +72,7 @@ LLFWPOSTPassed:
 	.db 0xA, 0x0
 
 LLFWPOSTNoRAM:
-	.ds Insufficient RAM to run this firmware, at least 1024KB must be installed in slot 0.
+	.ds Insufficient RAM to run this firmware, at least 1024KB must be
+	.db 0xA
+	.ds installed in slot 0.
 	.db 0xA, 0x0

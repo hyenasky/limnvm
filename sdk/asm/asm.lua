@@ -23,25 +23,24 @@ end
 local source = arg[1]
 local dest = arg[2]
 
-if source == "--help" or source == nil then
+if (not source) or (not dest) then
+	print("argument mismatch")
 	printhelp()
 	return
-end
-
-if (not source) or (not dest) then
-	error("argument mismatch. Try running with --help.")
 end
 
 local srcf = io.open(source, "r")
 
 if not srcf then
-	error(string.format("error opening source file %s", source))
+	print(string.format("error opening source file %s", source))
+	return
 end
 
 local destf = io.open(dest, "w")
 
 if not destf then
-	error(string.format("error opening destination file %s", dest))
+	print(string.format("error opening destination file %s", dest))
+	return
 end
 
 destf:write(asm.as(srcf:read("*a"), false, source))

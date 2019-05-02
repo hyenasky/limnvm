@@ -1,1 +1,8 @@
-1. setting nvram menu-skip?=false leads to heap corruption, somehow
+fw is pretty unstable atm
+
+1. strange screen tearing occurs occasionally when the graphical console scrolls
+	seems to be some kinda heap related bug or stack overflow
+	usually accompanied by the firmware crashing on reboot until the entire vm is hard reset (closed and opened again)
+	this is super weird!
+
+	temp fix: zero out first meg of RAM in llfw on crash til I have time to figure out whats goin on

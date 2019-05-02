@@ -1,4 +1,3 @@
-#include "prim.s"
 #include "Runtime.d"
 #include "lib/List.d"
 #include "lib/Tree.d"
@@ -17,15 +16,13 @@ asm preamble "
 Entry:
 
 ;r0 contains pointer to API
-call _PUSH
+pushv r5, r0
 
 ;r1 contains devnode
-mov r0, r1
-call _PUSH
+pushv r5, r1
 
 ;r2 contains args
-mov r0, r2
-call _PUSH
+pushv r5, r2
 
 b Main
 
@@ -68,11 +65,9 @@ procedure Main (* ciptr bootdev args -- *)
 	end
 
 	CIPtr@ BootDevice@ args@ asm "
-		call _POP
-		mov r2, r0
-		call _POP
-		mov r1, r0
-		call _POP
+		pushv r5, r2
+		pushv r5, r1
+		pushv r5, r0
 		b 0x200004
 	"
 end

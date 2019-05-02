@@ -1,22 +1,47 @@
 var InterruptsVT 0
 
 procedure InterruptsInit (* -- *)
+	auto oivt
+
+	asm "
+
+	pushv r5, ivt
+
+	" oivt!
+
 	1024 Calloc InterruptsVT!
 
+	oivt@ FaultsCopy
+
 	InterruptsVT@ asm "
-		call _POP
+		popv r5, r0
 		cli
 		mov ivt, r0
 	"
 
+	InterruptEnable
+end
+
+procedure FaultsCopy (* oivt -- *)
+	auto oivt
+	oivt!
+
+	auto i
+	0 i!
+	while (i@ 10 <)
+		oivt@ @ i@ InterruptRegister
+		i@ 1 + i!
+		oivt@ 4 + oivt!
+	end
+end
+
+procedure FaultsRegister (* -- *)
 	auto i
 	0 i!
 	while (i@ 10 <)
 		pointerof FaultsHandlerASM i@ InterruptRegister
 		i@ 1 + i!
 	end
-
-	InterruptEnable
 end
 
 table FaultsNames
@@ -45,15 +70,23 @@ procedure FaultsHandler (* num loc -- *)
 	ConsoleUserOut
 
 	if (ConsoleInMethod@ 0 ~=)
-		loc@ [num@]FaultsNames@ "!!!FAULT!!! %s at %x, resetting on console input\n" Printf
+		loc@ [num@]FaultsNames@ "\n!!!FAULT!!! %s at %x, resetting on console input.\nPress 'c' to clear NVRAM.\n" Printf
 
-		while (Getc ERR ==) end
+		auto c
+		ERR c!
+		while (c@ ERR ==)
+			Getc c!
+		end
 
-		Reset
+		if (c@ 'c' ==)
+			NVRAMFormat
+		end
+
+		LateReset
 	end else
-		loc@ [num@]FaultsNames@ "!!!FAULT!!! %s at %x, resetting\n" Printf
+		loc@ [num@]FaultsNames@ "\n!!!FAULT!!! %s at %x, resetting.\n" Printf
 
-		Reset
+		LateReset
 	end
 end
 
@@ -65,11 +98,12 @@ FaultsHandlerASM:
 	pop r1
 
 	li sp, 0x1FFF ;put stack in known location
+	li r5, 0x0FFF ;this too
 
-	call _PUSH
+	pushv r5, r0
 
 	mov r0, r1
-	call _PUSH
+	pushv r5, r0
 
 	call FaultsHandler
 
@@ -92,7 +126,7 @@ procedure InterruptDisable (* -- rs *)
 
 	mov r0, rs
 	bclri rs, rs, 1
-	call _PUSH
+	pushv r5, r0
 
 	"
 end
@@ -100,7 +134,7 @@ end
 procedure InterruptRestore (* rs -- *)
 	asm "
 
-	call _POP
+	popv r5, r0
 	mov rs, r0
 
 	"

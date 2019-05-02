@@ -32,13 +32,15 @@ end
 local srcf = io.open(source, "r")
 
 if not srcf then
-	error(string.format("error opening source file %s", source))
+	print(string.format("error opening source file %s", source))
+	return
 end
 
 local destf = io.open(dest, "w")
 
 if not destf then
-	error(string.format("error opening destination file %s", dest))
+	print(string.format("error opening destination file %s", dest))
+	return
 end
 
 destf:write(df.c(srcf:read("*a"), source, arg[3] == "-noprim"))

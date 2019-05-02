@@ -7,8 +7,6 @@ table API
 	pointerof APIMalloc
 	pointerof APICalloc
 	pointerof APIFree
-	pointerof _PUSH
-	pointerof _POP
 endtable
 
 procedure APIMalloc
@@ -16,9 +14,9 @@ procedure APIMalloc
 
 	;r0 - size
 
-	call _PUSH
+	pushv r5, r0
 	call Malloc
-	call _POP
+	popv r5, r0
 
 	;r0 - ptr
 
@@ -30,9 +28,9 @@ procedure APICalloc
 
 	;r0 - size
 
-	call _PUSH
+	pushv r5, r0
 	call Calloc
-	call _POP
+	popv r5, r0
 
 	;r0 - ptr
 
@@ -44,7 +42,7 @@ procedure APIFree
 
 	;r0 - ptr
 
-	call _PUSH
+	pushv r5, r0
 	call Free
 
 	"
@@ -55,7 +53,7 @@ procedure APIPutc
 
 	;r0 - char
 
-	call _PUSH
+	pushv r5, r0
 	call Putc
 
 	"
@@ -65,7 +63,7 @@ procedure APIGetc
 	asm "
 
 	call Getc
-	call _POP
+	popv r5, r0
 
 	;r0 - char
 
@@ -80,10 +78,10 @@ procedure APIGets
 
 	xch r0, r1
 
-	call _PUSH
+	pushv r5, r0
 
 	mov r0, r1
-	call _PUSH
+	pushv r5, r0
 
 	call Gets
 
@@ -95,7 +93,7 @@ procedure APIPuts
 
 	;r0 - string
 
-	call _PUSH
+	pushv r5, r0
 
 	call Puts
 
@@ -107,7 +105,7 @@ procedure APIPutx
 
 	;r0 - x
 
-	call _PUSH
+	pushv r5, r0
 
 	call Putx
 
@@ -119,7 +117,7 @@ procedure APIPutn
 
 	;r0 - n
 
-	call _PUSH
+	pushv r5, r0
 
 	call Putn
 
@@ -131,7 +129,7 @@ procedure APIDevTree
 
 	li r1, DevCurrent
 
-	call _POP
+	popv r5, r0
 
 	;r0 - devtree
 	;r1 - devcurrent

@@ -10,20 +10,22 @@ asm preamble "
 
 Entry:
 
+li r5, MyStack
+
 ;r0 contains pointer to API
-call _PUSH
+pushv r5, r0
 
 ;r1 contains devnode
-mov r0, r1
-call _PUSH
+pushv r5, r1
 
 ;r2 contains args
-mov r0, r2
-call _PUSH
+pushv r5, r2
 
 b Main
 
 "
+
+buffer MyStack 256
 
 procedure Main (* ciptr bootdev args -- *)
 

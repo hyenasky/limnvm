@@ -2,11 +2,6 @@
 
 var CIPtr 0
 
-procedure _UNDERFLOW (* -- *)
-	"Runtime error: Stack underflow.\n" Printf
-	while (1) end
-end
-
 procedure CR (* -- *)
 	'\n' Putc
 end
@@ -35,38 +30,12 @@ _CIC_DevTree === 16
 _CIC_Malloc === 20
 _CIC_Calloc === 24
 _CIC_Free === 28
-_CIC_PUSH === 32
-_CIC_POP === 36
-
-; v --
-ANTEPush:
-	push r30
-
-	call _POP
-
-	li r30, _CIC_PUSH
-	call _CIC_Call
-
-	pop r30
-	ret
-
-; -- v
-ANTEPop:
-	push r30
-
-	li r30, _CIC_POP
-	call _CIC_Call
-
-	call _PUSH
-
-	pop r30
-	ret
 
 ; string --
 Puts:
 	push r30
 
-	call _POP
+	popv r5, r0
 
 	li r30, _CIC_Puts
 	call _CIC_Call
@@ -78,10 +47,10 @@ Puts:
 Gets:
 	push r30
 
-	call _POP
+	popv r5, r0
 	mov r1, r0
 
-	call _POP
+	popv r5, r0
 
 	li r30, _CIC_Gets
 	call _CIC_Call
@@ -93,7 +62,7 @@ Gets:
 Putc:
 	push r30
 
-	call _POP
+	popv r5, r0
 
 	li r30, _CIC_Putc
 	call _CIC_Call
@@ -105,12 +74,12 @@ Putc:
 Getc:
 	push r30
 
-	call _POP
+	popv r5, r0
 
 	li r30, _CIC_Getc
 	call _CIC_Call
 
-	call _PUSH
+	pushv r5, r0
 
 	pop r30
 	ret
@@ -122,10 +91,10 @@ APIDevTree:
 	li r30, _CIC_DevTree
 	call _CIC_Call
 
-	call _PUSH
+	pushv r5, r0
 
 	mov r0, r1
-	call _PUSH
+	pushv r5, r0
 
 	pop r30
 	ret
@@ -134,12 +103,12 @@ APIDevTree:
 Malloc:
 	push r30
 
-	call _POP
+	popv r5, r0
 
 	li r30, _CIC_Malloc
 	call _CIC_Call
 
-	call _PUSH
+	pushv r5, r0
 
 	pop r30
 	ret
@@ -148,12 +117,12 @@ Malloc:
 Calloc:
 	push r30
 
-	call _POP
+	popv r5, r0
 
 	li r30, _CIC_Calloc
 	call _CIC_Call
 
-	call _PUSH
+	pushv r5, r0
 
 	pop r30
 	ret
@@ -162,7 +131,7 @@ Calloc:
 Free:
 	push r30
 
-	call _POP
+	popv r5, r0
 
 	li r30, _CIC_Free
 	call _CIC_Call
@@ -175,7 +144,7 @@ Free:
 procedure Call (* ... ptr -- ... *)
 	asm "
 
-	call _POP
+	popv r5, r0
 	br r0
 
 	"

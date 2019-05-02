@@ -1,21 +1,7 @@
-procedure _UNDERFLOW (* -- *)
-	asm "
-
-	pop r0
-	pop r0
-	call _PUSH
-
-	"
-
-	"underflow at %x\n" Printf
-
-	while (1) end
-end
-
 procedure Call (* ... ptr -- ... *)
 	asm "
 
-	call _POP
+	popv r5, r0
 	br r0
 
 	"
@@ -25,6 +11,7 @@ procedure _DumpStack (* -- *)
 
 	"--sd--\n" Printf
 
+(*
 	asm "
 
 	li r0, 0
@@ -41,11 +28,11 @@ procedure _DumpStack (* -- *)
 	push r2
 	push r3
 	mov r0, r3
-	call _PUSH
+	pushv r5, r0
 	call Putx
 
 	li r0, 0xA
-	call _PUSH
+	pushv r5, r0
 	call Putc
 	pop r3
 	pop r2
@@ -60,6 +47,8 @@ procedure _DumpStack (* -- *)
 .out:
 
 	"
+
+TODO: make this work again *) 
 
 	"--end sd--\n" Printf
 end

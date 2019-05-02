@@ -1,5 +1,3 @@
-var AHDBSpinning 0
-
 const AHDBCmdPort 0x19
 const AHDBPortA 0x1A
 const AHDBPortB 0x1B
@@ -59,7 +57,12 @@ procedure AHDBPartitions (* id -- *)
 
 						pointerof AHDBRead "readBlock" DAddMethod
 						pointerof AHDBWrite "writeBlock" DAddMethod
+
+						DevCurrent@
 					DeviceExit
+
+					auto dn
+					dn!
 
 					ptr@ AHDB_PTE_Blocks + @ offset@ + offset!
 
@@ -75,8 +78,6 @@ procedure AHDBPartitions (* id -- *)
 end
 
 procedure BuildAHDB (* -- *)
-	pointerof AHDBInt 0x31 PBInterruptRegister
-
 	DeviceNew
 		"ahdb" DSetName
 
@@ -103,30 +104,16 @@ procedure BuildAHDB (* -- *)
 					pointerof AHDBWrite "writeBlock" DAddMethod
 
 					i@ AHDBPartitions
+					DevCurrent@
 				DeviceExit
+
+				auto dn
+				dn!
 			end
 
 			i@ 1 + i!
 		end
 	DeviceExit
-end
-
-procedure AHDBInt (* -- *)
-	auto event
-	auto details
-
-	AHDBInfo
-	details!
-	event!
-
-	if (event@ 0 ==)
-		0 AHDBSpinning!
-		return
-	end
-
-	if (event@ 1 == event@ 2 == ||)
-		"AHDB: device event. Resetting to avoid big problems.\n" Printf Reset
-	end
 end
 
 procedure AHDBRead (* ptr block -- ok? *)
@@ -146,17 +133,14 @@ procedure AHDBRead (* ptr block -- ok? *)
 
 	"offset" DGetProperty block@ + block!
 
-	1 AHDBSpinning!
-
 	id@ AHDBSelect
 
 	block@ AHDBPortA DCitronOutl
 	ptr@ AHDBPortB DCitronOutl
-	AHDBCmdRead AHDBCmdPort DCitronCommandASync
+	AHDBCmdRead AHDBCmdPort DCitronCommand
 
 	rs@ InterruptRestore
 
-	while (AHDBSpinning@) end
 	1
 end
 
@@ -177,17 +161,14 @@ procedure AHDBWrite (* ptr block -- ok? *)
 
 	"offset" DGetProperty block@ + block!
 
-	1 AHDBSpinning!
-
 	id@ AHDBSelect
 
 	block@ AHDBPortA DCitronOutl
 	ptr@ AHDBPortB DCitronOutl
-	AHDBCmdWrite AHDBCmdPort DCitronCommandASync
+	AHDBCmdWrite AHDBCmdPort DCitronCommand
 
 	rs@ InterruptRestore
 
-	while (AHDBSpinning@) end
 	1
 end
 

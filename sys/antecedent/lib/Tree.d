@@ -33,7 +33,7 @@ end
 
 procedure TreeCreate (* -- tree *)
 	auto out
-	Tree_SIZEOF Malloc out!
+	Tree_SIZEOF Calloc out!
 
 	0 out@ Tree_Nodes + !
 	0 out@ Tree_Root + !
@@ -112,7 +112,7 @@ procedure TreeNodeCreate (* value -- *)
 	value!
 
 	auto out
-	TreeNode_SIZEOF Malloc out!
+	TreeNode_SIZEOF Calloc out!
 
 	value@ out@ TreeNode_Value + !
 	ListCreate out@ TreeNode_Children + !

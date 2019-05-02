@@ -36,6 +36,23 @@ LLFWSerialPuts:
 	pop r1
 	ret
 
+;outputs:
+;r0 - char or 0xFFFF if buf empty
+LLFWSerialRead:
+	push r1
+
+	;wait for serial port to become available
+.wait:
+	lri.b r1, LLFWSerialPortA
+	cmpi r1, 0
+	bne .wait
+
+	sii.b LLFWSerialPortA, 2
+	lri.b r0, LLFWSerialPortB
+
+	pop r1
+	ret
+
 LLFWSerialIntegerChars:
 	.ds 0123456789ABCDEF
 
