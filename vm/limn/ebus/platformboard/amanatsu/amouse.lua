@@ -13,6 +13,9 @@ function mouse.new(vm, c, intw)
 	local inf1 = 0
 	local inf2 = 0
 
+	local adx = 0
+	local ady = 0
+
 	local ignore = false
 
 	local ifs = {}
@@ -23,9 +26,19 @@ function mouse.new(vm, c, intw)
 		end
 	end
 
+	local function fmtn(n)
+		local nn = band(math.abs(n), 0x7FFF)
+
+		if n < 0 then
+			n = bor(nn, 0x8000)
+		end
+
+		return n
+	end
+
 	function m.info(i1, i2)
-		if #ifs >= 4 then
-			ifs[4] = nil
+		if #ifs >= 8 then
+			ifs[8] = nil
 		end
 
 		ifs[#ifs+1] = {i1, i2}
@@ -40,61 +53,51 @@ function mouse.new(vm, c, intw)
 			m.portB = ift[2]
 		elseif v == 2 then -- reset
 			ifs = {}
+			adx = 0
+			ady = 0
+		elseif v == 3 then -- get dx and dy since last poll
+			m.portA = fmtn(adx)
+			m.portB = fmtn(ady)
+
+			adx = 0
+			ady = 0
 		end
 	end
 
-	vm.registerCallback("keypressed", function (key, t, isrepeat)
-		if t == "ralt" then
-			if mfocused then
-				mfocused = false
-				love.mouse.setGrabbed(false)
-				love.mouse.setVisible(true)
-				love.mouse.setRelativeMode(false)
-				love.window.setTitle("limnvm")
-			end
-		end
-	end)
+	if c.window then
+		c.window.captureMouse = true
 
-	vm.registerCallback("mousepressed", function (x, y, button)
-		if not mfocused then
-			mfocused = true
-			love.window.setTitle("limnvm - press right alt key to uncapture mouse")
-			love.mouse.setVisible(false)
-			love.mouse.setGrabbed(true)
-			love.mouse.setRelativeMode(true)
-			ignore = true
-			return
+		function c.window:mousepressed(x, y, button)
+			m.info(1, button)
 		end
 
-		m.info(1, button)
-	end)
+		function c.window:mousereleased(x, y, button)
+			if ignore then ignore = false return end
 
-	vm.registerCallback("mousereleased", function (x, y, button)
-		if not mfocused then return end
-
-		if ignore then ignore = false return end
-
-		m.info(2, button)
-	end)
-
-	vm.registerCallback("mousemoved", function (x, y, dx, dy)
-		if not mfocused then return end
-
-		local ndx = band(math.abs(dx), 0x7FFF)
-		local ndy = band(math.abs(dy), 0x7FFF)
-
-		if dx < 0 then
-			dx = bor(ndx, 0x8000)
-		end
-		if dy < 0 then
-			dy = bor(ndy, 0x8000)
+			m.info(2, button)
 		end
 
-		m.info(3, bor(lshift(dx, 16), dy))
-	end)
+		function c.window:mousemoved(x, y, dx, dy)
+			adx = adx + dx
+			ady = ady + dy
+			
+			adx = math.min(adx, 0x7FFF)
+			adx = math.max(adx, -0x7FFF)
+
+			ady = math.min(ady, 0x7FFF)
+			ady = math.max(ady, -0x7FFF)
+
+			dx = fmtn(dx)
+			dy = fmtn(dy)
+
+			m.info(3, bor(lshift(dx, 16), dy))
+		end
+	end
 
 	function m.reset()
 		ifs = {}
+		adx = 0
+		ady = 0
 	end
 
 	return m

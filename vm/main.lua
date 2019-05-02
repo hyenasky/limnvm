@@ -2,9 +2,7 @@ block = require("block")
 ffi = require("ffi")
 require("misc")
 
-panel = require("ui.panel")
-panel.cpanel = require("ui.cpanel")
-local cpanel = panel.cpanel
+window = require("ui/window")
 
 --[[
 	Virtual machine
@@ -24,16 +22,7 @@ vm.instructionsPerTick = 0
 vm.cb = {}
 vm.cb.update = {}
 vm.cb.draw = {}
-vm.cb.keypressed = {}
-vm.cb.keyreleased = {}
-vm.cb.mousepressed = {}
-vm.cb.mousereleased = {}
-vm.cb.mousemoved = {}
-vm.cb.wheelmoved = {}
-vm.cb.textinput = {}
-vm.cb.filedropped = {}
 vm.cb.quit = {}
-vm.drawable = {}
 
 function vm.registerCallback(t, cb)
 	local t = vm.cb[t]
@@ -52,6 +41,8 @@ local dbmsg = false
 
 function love.load(arg)
 	vm.log = require("log").init(vm)
+
+	window.init()
 
 	vm.computer = require("computer").new(vm, 1024*1024*32) -- new computer with 32mb of mem
 
@@ -79,10 +70,18 @@ function love.load(arg)
 
 	vm.instructionsPerTick = vm.hz / vm.targetfps
 
-	panel.sp(cpanel)
-
-	love.graphics.setFont(love.graphics.newFont("ui/kongtext.ttf", 8))
 	love.keyboard.setKeyRepeat(true)
+
+	if vm.computer.window then
+		vm.computer.window:open(0,0)
+
+		if not vm.computer.window.gc then
+			vm.computer.window:shutter()
+			window.unselectany(vm.computer.window)
+		end
+	end
+
+	window.winterest()
 end
 
 local cycles = 0
@@ -116,103 +115,42 @@ function love.update(dt)
 			end
 		end, function (x) vm.computer.cpu.vmerr(x) end)
 	end
-
-	if cpanel.enabled then
-		panel.update(dt)
-	end
 end
 
 function love.draw()
-	local wh = love.graphics.getHeight()
-	local ww = love.graphics.getWidth()
-
-	local s = 1
-
-	local vct = vm.cb.draw
-	local vcl = #vct
-	for i = 1, vcl do
-		vct[i](0, 0, s)
-	end
-
-	if cpanel.enabled then
-		panel.draw()
-	end
+	window.draw()
 end
 
 function love.keypressed(key, t, isrepeat)
-	if cpanel.enabled then
-		panel.keypressed(key, t, isrepeat)
-	else
-		if key == "rctrl" then
-			cpanel.enabled = true
-		end
-
-		local vct = vm.cb.keypressed
-		local vcl = #vct
-		for i = 1, vcl do
-			vct[i](key, t, isrepeat)
-		end
-	end
+	window.keypressed(key, t)
 end
 
 function love.keyreleased(key, t)
-	local vct = vm.cb.keyreleased
-	local vcl = #vct
-	for i = 1, vcl do
-		vct[i](key, t)
-	end
+	window.keyreleased(key, t)
 end
 
 function love.mousepressed(x, y, button)
-	local vct = vm.cb.mousepressed
-	local vcl = #vct
-	for i = 1, vcl do
-		vct[i](x, y, button)
-	end
+	window.mousepressed(x, y, button)
 end
 
 function love.mousereleased(x, y, button)
-	local vct = vm.cb.mousereleased
-	local vcl = #vct
-	for i = 1, vcl do
-		vct[i](x, y, button)
-	end
+	window.mousereleased(x, y, button)
 end
 
 function love.mousemoved(x, y, dx, dy, istouch)
-	local vct = vm.cb.mousemoved
-	local vcl = #vct
-	for i = 1, vcl do
-		vct[i](x, y, dx, dy, istouch)
-	end
+	window.mousemoved(x, y, dx, dy)
 end
 
 function love.wheelmoved(x, y)
-	local vct = vm.cb.wheelmoved
-	local vcl = #vct
-	for i = 1, vcl do
-		vct[i](x, y)
-	end
+	window.wheelmoved(x, y)
 end
 
 function love.textinput(text)
-	local vct = vm.cb.textinput
-	local vcl = #vct
-	for i = 1, vcl do
-		vct[i](text)
-	end
-
-	if cpanel.enabled then
-		panel.textinput(text)
-	end
+	window.textinput(text)
 end
 
 function love.filedropped(file)
-	local vct = vm.cb.filedropped
-	local vcl = #vct
-	for i = 1, vcl do
-		vct[i](file)
-	end
+	window.filedropped(file)
 end
 
 function love.quit()

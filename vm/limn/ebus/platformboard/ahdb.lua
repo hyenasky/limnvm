@@ -28,6 +28,7 @@ local ahdb = {}
 --		port 1B: details
 --	5: poll drive
 --		port 1A: drive ID
+--  6: enable interrupts
 --	returns:
 --		port 1A: bitfield
 --			bit 0: drive attached here?
@@ -44,6 +45,8 @@ function ahdb.new(vm, c, int, bus)
 	local writeByte = c.bus.storeByte
 
 	b.drives = {}
+
+	local doint = false
 
 	function b.attach(mask) -- attach drive
 		-- find empty slot
@@ -97,7 +100,9 @@ function ahdb.new(vm, c, int, bus)
 		infowhat = what
 		infodetails = details
 
-		int(0x31)
+		if doint then
+			int(0x31)
+		end
 	end
 
 	local selected = 0 -- selected drive
@@ -176,6 +181,8 @@ function ahdb.new(vm, c, int, bus)
 					port19 = 0
 					port1A = 0
 				end
+			elseif v == 6 then -- enable interrupts
+				doint = true
 			end
 		end
 	end)
@@ -195,6 +202,13 @@ function ahdb.new(vm, c, int, bus)
 			port1A = v
 		end
 	end)
+
+	function b.reset()
+		doint = false
+		port1A = 0
+		port19 = 0
+		selected = 0
+	end
 
 	vm.registerOpt("-ahd", function (arg, i)
 		local image = arg[i + 1]

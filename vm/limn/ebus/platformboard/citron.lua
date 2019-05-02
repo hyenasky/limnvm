@@ -37,18 +37,6 @@ function bus.new(vm, c)
 		end
 	end
 
-	-- ui
-	b.panel = panel.new(0,0,150,250)
-	b.panel:setTitle("Bus")
-
-	b.panel:addHook("Exit", function ()
-		panel.cpanel.enabled = false
-	end)
-
-	c.panel:addHook("Bus", function ()
-		b.panel:draw()
-	end)
-
 	return b
 end
 

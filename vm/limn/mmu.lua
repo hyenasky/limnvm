@@ -3,7 +3,6 @@ local mmu = {}
 local lshift, rshift, tohex, arshift, band, bxor, bor, bnot, bror, brol =
 	lshift, rshift, tohex, arshift, band, bxor, bor, bnot, bror, brol
 
-
 function mmu.new(vm, c)
 	local m = {}
 

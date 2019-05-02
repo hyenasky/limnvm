@@ -107,20 +107,22 @@ function keydev.new(vm, c, intw)
 		end
 	end
 
-	vm.registerCallback("keypressed", function (key, t, isrepeat)
-		if layout.m[t] then
-			int()
-			if love.keyboard.isDown("lshift") then
-				kbd.kba(0xF0)
-				kbd.kba(layout.m[t])
-			elseif love.keyboard.isDown("lctrl") then
-				kbd.kba(0xF1)
-				kbd.kba(layout.m[t])
-			else
-				kbd.kba(layout.m[t])
+	if c.window then
+		function c.window.keypressed(key, t)
+			if layout.m[t] then
+				int()
+				if love.keyboard.isDown("lshift") then
+					kbd.kba(0xF0)
+					kbd.kba(layout.m[t])
+				elseif love.keyboard.isDown("lctrl") then
+					kbd.kba(0xF1)
+					kbd.kba(layout.m[t])
+				else
+					kbd.kba(layout.m[t])
+				end
 			end
 		end
-	end)
+	end
 
 	function kbd.reset()
 		kbd.kbb = {}

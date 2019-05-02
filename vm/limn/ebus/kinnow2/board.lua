@@ -22,6 +22,7 @@ local palette = require("limn/ebus/kinnow2/kinnow_palette")
 --  4: scroll
 --  5: present
 --  6: window
+--  7: get vsync flag + clear
 -- port 1: data
 -- port 2: data
 -- port 3: data
@@ -37,10 +38,10 @@ function gpu.new(vm, c, page, intn)
 		c.cpu.int(intn)
 	end
 
-	g.height = love.graphics.getHeight()
+	g.height = 768
 	local height = g.height
 
-	g.width = love.graphics.getWidth()
+	g.width = 1024
 	local width = g.width
 
 	local fbs = width * height
@@ -56,10 +57,9 @@ function gpu.new(vm, c, page, intn)
 
 	imageData:release()
 
-	g.canvas = love.graphics.newCanvas(width,height)
-	local canvas = g.canvas
-
 	g.vsync = false
+
+	local vsyncf = 0
 
 	local enabled = true
 
@@ -90,11 +90,6 @@ function gpu.new(vm, c, page, intn)
 		fbs = width * height
 		bytesPerRow = width
 
-		g.canvas:release()
-
-		g.canvas = love.graphics.newCanvas(w,h)
-		canvas = g.canvas
-
 		g.framebuffer = nil
 		g.framebuffer = ffi.new("uint8_t[?]", fbs)
 		framebuffer = g.framebuffer
@@ -111,6 +106,10 @@ function gpu.new(vm, c, page, intn)
 		love.window.setMode(width, height, {["resizable"]=true})
 
 		setWindow(0,0,width,height)
+
+		if c.window then
+			c.window:setDim(width, height)
+		end
 
 		return 3
 	end)
@@ -352,6 +351,9 @@ function gpu.new(vm, c, page, intn)
 				end
 
 				setWindow(x, y, w, h)
+			elseif v == 7 then -- vsyncf
+				port13 = vsyncf
+				vsyncf = 0
 			end
 		else
 			return 0
@@ -405,42 +407,56 @@ function gpu.new(vm, c, page, intn)
 		g.vsync = false
 	end
 
-	vm.registerCallback("draw", function (x,y,s)
-		if enabled then
-			if m then
-				local uw, uh = subRectX2 - subRectX1 + 1, subRectY2 - subRectY1 + 1
+	if c.window then
+		c.window.gc = true
 
-				if (uw == 0) or (uh == 0) then
+		local wc = c.window:addElement(window.canvas(c.window, function (self, x, y) 
+			if enabled then
+				love.graphics.setColor(0.3,0.0,0.1,1)
+				love.graphics.print("Framebuffer not initialized by guest.", x + 10, y + 10)
+				love.graphics.setColor(1,1,1,1)
+
+				if m then
+					local uw, uh = subRectX2 - subRectX1 + 1, subRectY2 - subRectY1 + 1
+
+					if (uw == 0) or (uh == 0) then
+						m = false
+						return
+					end
+
+					local imageData = love.image.newImageData(uw, uh)
+
+					local base = (subRectY1 * width) + subRectX1
+
+					imageData:mapPixel(function (x,y,r,g,b,a)
+						local e = palette[framebuffer[base + (y * width + x)]]
+
+						return e.r/255,e.g/255,e.b/255,1
+					end, 0, 0, uw, uh)
+
+					image:replacePixels(imageData, nil, nil, subRectX1, subRectY1)
+
+					imageData:release()
+
 					m = false
-					return
+					subRectX1 = false
 				end
 
-				local imageData = love.image.newImageData(uw, uh)
+				love.graphics.setColor(1,1,1,1)
+				love.graphics.draw(image, x, y, 0)
 
-				local base = (subRectY1 * width) + subRectX1
+				if g.vsync then
+					int()
+				end
 
-				imageData:mapPixel(function (x,y,r,g,b,a)
-					local e = palette[framebuffer[base + (y * width + x)]]
-
-					return e.r/255,e.g/255,e.b/255,1
-				end, 0, 0, uw, uh)
-
-				image:replacePixels(imageData, nil, nil, subRectX1, subRectY1)
-
-				imageData:release()
-
-				m = false
-				subRectX1 = false
+				vsyncf = 1
 			end
+		end, width, height))
 
-			love.graphics.setColor(1,1,1,1)
-			love.graphics.draw(image, x, y, 0, s, s)
+		wc.x = 0
+		wc.y = 20
+	end
 
-			if g.vsync then
-				int()
-			end
-		end
-	end)
 
 	return g
 end

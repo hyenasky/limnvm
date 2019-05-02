@@ -41,15 +41,12 @@ function pboard.new(vm, c, branch, intn)
 	local citron = pb.citron
 	local citronh = citron.bush
 
-	pb.serial = require("limn/ebus/platformboard/serial").new(vm, c, citron)
+	pb.serial = require("limn/ebus/platformboard/serial").new(vm, c, int, citron)
 	pb.blitter = require("limn/ebus/platformboard/blitter").new(vm, c, int, citron)
 	pb.clock = require("limn/ebus/platformboard/clock").new(vm, c, int, citron)
 	pb.ahdb = require("limn/ebus/platformboard/ahdb").new(vm, c, int, citron)
 	pb.amtsu = require("limn/ebus/platformboard/amanatsu/bus").new(vm, c, citron)
 	local amtsu = pb.amtsu
-
-	amtsu.addDevice(require("limn/ebus/platformboard/amanatsu/akeyboard").new(vm, c, int))
-	amtsu.addDevice(require("limn/ebus/platformboard/amanatsu/amouse").new(vm, c, int))
 
 	-- end deeply ugly code to return to only slightly ugly code
 
@@ -100,8 +97,23 @@ function pboard.new(vm, c, branch, intn)
 		intq = {}
 
 		pb.clock.reset()
+		pb.serial.reset()
+		pb.ahdb.reset()
+		pb.blitter.reset()
 		amtsu.reset()
 	end
+
+	vm.registerOpt("-keyboard", function (arg, i)
+		amtsu.addDevice(require("limn/ebus/platformboard/amanatsu/akeyboard").new(vm, c, int))
+
+		return 1
+	end)
+
+	vm.registerOpt("-mouse", function (arg, i)
+		amtsu.addDevice(require("limn/ebus/platformboard/amanatsu/amouse").new(vm, c, int))
+
+		return 1
+	end)
 
 	return pb
 end

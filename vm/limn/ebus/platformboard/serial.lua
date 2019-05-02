@@ -5,6 +5,7 @@ local serial = {}
 --	0: idle
 --	1: write
 --	2: read
+--  3: enable interrupts
 -- port 0x11: in/out byte
 
 local tc = [[
@@ -16,10 +17,12 @@ end
 
 ]]
 
-function serial.new(vm, c, bus)
+function serial.new(vm, c, int, bus)
 	local s = {}
 
 	local stdo = false
+
+	local doint = false
 
 	local input = {text = ""}
 
@@ -28,20 +31,33 @@ function serial.new(vm, c, bus)
 	local iq = {}
 	local oq = {}
 
+	local function qchar(c)
+		iq[#iq + 1] = c
+		if doint then
+			int(0x2B)
+		end
+	end
+
 	bus.addPort(0x10, function (e,t,v)
 		if t == 1 then
 			if v == 1 then
+				if s.termemu then
+					s.termemu.putc(string.char(s.termemu.sanitize(port11)))
+				end
+
 				if stdo then
 					io.write(string.char(port11))
 					io.flush()
 				end
-				oq[#oq + 1] = string.char(port11)
+				--oq[#oq + 1] = string.char(port11)
 			elseif v == 2 then
 				if #iq > 0 then -- input queue has stuff
 					port11 = string.byte(table.remove(iq,1))
 				else
 					port11 = 0xFFFF -- nada
 				end
+			elseif v == 3 then
+				doint = true
 			end
 		else
 			return 0 -- always idle since this is all synchronous (god bless emulators)
@@ -60,7 +76,7 @@ function serial.new(vm, c, bus)
 		for i = 1, #e do
 			local c = e:sub(i,i)
 
-			iq[#iq + 1] = c
+			qchar(c)
 		end
 	end
 
@@ -70,6 +86,12 @@ function serial.new(vm, c, bus)
 		else
 			return false
 		end
+	end
+
+	function s.reset()
+		doint = false
+		iq = {}
+		oq = {}
 	end
 
 	vm.registerOpt("-insf", function (arg, i)
@@ -92,76 +114,46 @@ function serial.new(vm, c, bus)
 		return 1
 	end)
 
+	if not window then
+		return s
+	end
 
+	s.termemu = require("ui/termemu")
 
+	s.termemu.stream = s.stream
 
+	s.termemu.swindow.name = "Serial Terminal"
 
+	vm.registerOpt("-serial,wopen", function (arg, i)
+		s.termemu.swindow:open(0, 20)
 
-
-
-
-	-- ui
-	s.panel = panel.new(0,0,150,250)
-	s.panel:setTitle("Serial Port")
-
-	s.panel:addHook("Exit", function ()
-		panel.cpanel.enabled = false
-	end)
-
-	local writepanel = panel.new(0,0,300,150)
-	writepanel:setTitle("Write")
-
-	writepanel:addText(
-[[Type a string and press enter to
-inject it into the serial port
-stream.]], 0, 10)
-
-	writepanel.i = writepanel:addTextInput(0, 40, 200, 10)
-
-	writepanel:setActiveTI(writepanel.i)
-
-	writepanel:addHook("Do it", function ()
-		local si = writepanel.ti[writepanel.i][5]
-		writepanel.ti[writepanel.i][5] = ""
-
-		local i = 1
-		while true do
-			if i > #si then
-				break
-			end
-
-			local c = si:sub(i,i)
-
-			if not c then break end
-
-			if c == "\\" then
-				local e = si:sub(i+1,i+1)
-
-				if e == "n" then --newline
-					s.stream("\n")
-				elseif e == "\\" then
-					s.stream("\\")
-				elseif e == "b" then
-					s.stream(string.char(8))
-				end
-
-				i = i + 2
-			else
-				s.stream(c)
-				i = i + 1
-			end
-		end
-	end)
-
-	s.panel:addHook("Write", function ()
-		writepanel:draw()
-	end)
-
-	bus.panel:addHook("Serial Port", function ()
-		s.panel:draw()
+		return 1
 	end)
 
 	return s
 end
 
 return serial
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -17,6 +17,8 @@ function blitter.new(vm, c, int, bus)
 	local port3 = 0
 	local port4 = 0
 
+	local doint = false
+
 	bus.addPort(0x40, function(s, t, v)
 		if s ~= 0 then
 			return 0
@@ -35,6 +37,8 @@ function blitter.new(vm, c, int, bus)
 			local md = rshift(modulo, 16)
 
 			--local t = love.timer.getTime()
+
+			--print(string.format("from:%x, dest:%x, dim:%x, mod:%x, mf:%d, md:%d, w:%d, h:%d", from, dest, dim, modulo, mf, md, w, h))
 
 			if v == 1 then -- COPY
 				for r = 0, h-1 do
@@ -124,15 +128,36 @@ function blitter.new(vm, c, int, bus)
 					from = from + mf
 					dest = dest + md
 				end
+			elseif v == 10 then -- COPYNZ
+				for r = 0, h-1 do
+					for c = 0, w-1 do
+						local rb = readByte(from)
+						if rb ~= 0 then
+							writeByte(dest, readByte(from))
+						end
+						from = from + 1
+						dest = dest + 1
+					end
+					from = from + mf
+					dest = dest + md
+				end
+			elseif v == 0xFF then -- enable interrupts
+				doint = true
 			end
 
 			--print("blitter done in "..tostring(love.timer.getTime() - t).." seconds")
 
-			int(0x40)
+			if doint then
+				int(0x40)
+			end
 		else
 			return 0
 		end
 	end)
+
+	function b.reset()
+		doint = false
+	end
 
 	bus.addPort(0x41, function (s, t, v)
 		if t == 0 then

@@ -73,6 +73,8 @@ function cpu.new(vm, c)
 				sfq = 255
 			end
 
+			--p.vmerr(string.format("fault %x at %x", num, reg[32]))
+
 			fq[sfq + 1] = num
 			faultOccurred = true
 		end
@@ -163,7 +165,7 @@ function cpu.new(vm, c)
 	local pgReg = p.pgReg
 
 	function p.reset()
-		setState(0, 0) -- make sure we're in kernel mode
+		fillState(0)
 
 		local resetVector = TfetchLong(0xFFFE0000)
 
@@ -688,10 +690,10 @@ function cpu.new(vm, c)
 
 				for i = 0, 37 do
 					if i == 34 then
-						fillState(TfetchLong(htta+(34*4)))
+						fillState(fetchLong(htta+(34*4)))
 					else
 						if (i ~= 36) and (i ~= 33) then
-							reg[i] = TfetchLong(htta+(i*4))
+							reg[i] = fetchLong(htta+(i*4))
 						end
 					end
 				end
@@ -713,12 +715,12 @@ function cpu.new(vm, c)
 				local npc = pop()
 
 				for i = 0, 37 do
-					TstoreLong(htta+(i*4), reg[i])
+					storeLong(htta+(i*4), reg[i])
 				end
 
-				TstoreLong(htta+(34*4), nrs)
-				TstoreLong(htta+(0*4), n0)
-				TstoreLong(htta+(32*4), npc)
+				storeLong(htta+(34*4), nrs)
+				storeLong(htta+(0*4), n0)
+				storeLong(htta+(32*4), npc)
 			else
 				fault(3)
 			end
@@ -734,6 +736,57 @@ function cpu.new(vm, c)
 			end
 
 			return pc + 1
+		end,
+
+		[0x4D] = function (pc) -- [rsp]
+			if kernelMode() then
+				psReg(fetchByte(pc + 1), reg[33])
+			else
+				psReg(fetchByte(pc + 1), reg[37])
+			end
+
+			return pc + 2
+		end,
+
+		[0x4E] = function (pc) -- [ssp]
+			if kernelMode() then
+				reg[33] = pgReg(fetchByte(pc + 1))
+			else
+				reg[37] = pgReg(fetchByte(pc + 1))
+			end
+
+			return pc + 2
+		end,
+
+		[0x4F] = function (pc) -- [pushv]
+			local ir = fetchByte(pc + 1)
+			local isp = math.abs(pgReg(ir) - 4)
+			psReg(ir, isp)
+
+			storeLong(isp, pgReg(fetchByte(pc + 2)))
+
+			return pc + 3
+		end,
+
+		[0x50] = function (pc) -- [pushvi]
+			local ir = fetchByte(pc + 1)
+			local isp = math.abs(pgReg(ir) - 4)
+			psReg(ir, isp)
+
+			storeLong(isp, fetchLong(pc + 2))
+
+			return pc + 6
+		end,
+
+		[0x51] = function (pc) -- [popv]
+			local ir = fetchByte(pc + 1)
+			local isp = pgReg(ir)
+
+			psReg(fetchByte(pc + 2), fetchLong(isp))
+
+			psReg(ir, isp + 4)
+
+			return pc + 3
 		end,
 
 		-- temporary for vm debug purposes
@@ -915,161 +968,6 @@ function cpu.new(vm, c)
 
 		reg[32] = reg[32] + 1
 	end
-
-
-
-
-
-
-
-
-
-	-- ui, wild west territory here on
-	p.panel = panel.new(0,0,150,250)
-	p.panel:setTitle("CPU")
-
-	p.panel:addHook("Exit", function ()
-		panel.cpanel.enabled = false
-	end)
-
-	local speedbox = panel.new(0,0,210,100)
-	speedbox:setTitle("Speed")
-
-	speedbox:addText("Input a speed in hertz.", 0, 10)
-
-	speedbox.si = speedbox:addTextInput(0, 45, 80, 10)
-
-	speedbox:setActiveTI(speedbox.si)
-
-	speedbox.ti[speedbox.si][5] = tostring(vm.hz)
-
-	p.panel:addHook("Speed", function ()
-		speedbox:draw()
-	end)
-
-	function speedbox:keypressed(key, t, isrepeat)
-		if key == "return" then
-			local sc = tonumber(speedbox.ti[speedbox.si][5])
-			if sc then
-				vm.hz = sc
-				vm.instructionsPerTick = vm.hz / vm.targetfps
-			end
-			speedbox.ti[speedbox.si][5] = tostring(vm.hz)
-		end
-	end
-
-	p.panel:addHook("Soft Reset", function ()
-		p.reset()
-	end)
-
-	p.panel:addHook("Hard Reset", function ()
-		reg[0] = 0
-		running = true
-		intq = {}
-		p.reset()
-	end)
-
-	p.panel.phook = p.panel:addHook("Pause", function ()
-		if running then
-			running = false
-			p.panel:setHook(p.panel.phook, "Unpause")
-		else
-			running = true
-			p.panel:setHook(p.panel.phook, "Pause")
-		end
-	end)
-
-	local interruptbox = panel.new(0,0,300,150)
-
-	interruptbox:setTitle("Interrupt")
-
-	interruptbox:addText(
-	[[Type a number and press enter to
-raise an interrupt.]], 0, 10)
-
-	interruptbox.i = interruptbox:addTextInput(0, 40, 100, 10)
-
-	interruptbox:setActiveTI(interruptbox.i)
-
-	interruptbox:addHook("Do it", function ()
-		local si = interruptbox.ti[interruptbox.i][5]
-		local e = tonumber(si)
-		if e then
-			if e < 10 then
-				fault(e)
-			else
-				int(e)
-			end
-			interruptbox.ti[interruptbox.i][5] = ""
-		end
-	end)
-
-	p.panel:addHook("Interrupt", function ()
-		interruptbox:draw()
-	end)
-
-	local statebox = panel.new(0,0,250,260)
-
-	statebox:setTitle("State")
-
-	statebox.rx = {}
-	statebox.ly = 20
-	statebox.areg = 0
-
-	for i = 0, 19 do
-		statebox.rx[i] = statebox:addTextInput(0, statebox.ly, 100, 10)
-		statebox.ly = statebox.ly + 10
-	end
-
-	statebox.ly = 20
-
-	for i = 20, 36 do
-		statebox.rx[i] = statebox:addTextInput(110, statebox.ly, 100, 10)
-		statebox.ly = statebox.ly + 10
-	end
-
-	statebox:setUpdate(function (dt)
-		for i = 0, 36 do
-			if i ~= statebox.areg then
-				statebox.ti[statebox.rx[i]][5] = string.format("0x%X", reg[i])
-			end
-		end
-	end)
-
-	function statebox:keypressed(key, t, isrepeat)
-		if key == "up" then
-			if statebox.areg < 1 then
-				statebox.areg = 35
-			else
-				statebox.areg = statebox.areg - 1
-			end
-		elseif key == "down" then
-			if statebox.areg == 35 then
-				statebox.areg = 0
-			else
-				statebox.areg = statebox.areg + 1
-			end
-		end
-
-		if key == "return" then
-			if statebox.areg ~= -1 then
-				local nr = tonumber(statebox.ti[statebox.rx[statebox.areg]][5])
-				if nr then
-					reg[statebox.areg] = nr
-				end
-			end
-		else
-			statebox:setActiveTI(statebox.rx[statebox.areg])
-		end
-	end
-
-	p.panel:addHook("State", function ()
-		statebox:draw()
-	end)
-
-	c.panel:addHook("CPU", function ()
-		p.panel:draw()
-	end)
 
 	return p
 end
