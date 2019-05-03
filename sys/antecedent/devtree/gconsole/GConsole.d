@@ -118,18 +118,13 @@ procedure GConsoleLongestLine (* -- width *)
 	longest@
 end
 
-procedure GConsoleReset (* -- *)
-	0 GCCurX!
-	0 GCCurY!
-
-	GCLineLenBuf@ Free
-	GCHeight@ 4 * Calloc GCLineLenBuf!
-end
-
 procedure GConsoleClear (* -- *)
 	GCColorBG@ GConsoleLongestLine GConsoleFontWidth * GCHeight@ GConsoleFontHeight * 0 0 GConsoleRect
 
-	GConsoleReset
+	0 GCCurX!
+	0 GCCurY!
+
+	GCLineLenBuf@ GCHeight@ 4 * 0 memset
 
 	1 GConsoleModified!
 end
